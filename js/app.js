@@ -256,7 +256,17 @@ const ViewManager = {
     root.classList.add('view-enter');
     if (view.bind) view.bind(root, rest);
 
+    // 导航高亮
+    document.querySelectorAll('.nav-item').forEach(b => {
+      const tab = b.dataset.route.slice(1); // '' for home
+      const active = tab === '' ? (this._tabOf(view.name) === 'home') : (this._tabOf(view.name) === tab);
+      b.classList.toggle('active', active);
+    });
     window.scrollTo(0, 0);
+  },
+  _tabOf(name) {
+    const map = { home: 'home', chat: 'chat', notes: 'notes', note: 'notes', ocr: 'notes', schedule: 'schedule', todos: 'schedule', settings: 'settings' };
+    return map[name] || 'home';
   }
 };
 
@@ -317,6 +327,10 @@ window.addEventListener('hashchange', () => Router.dispatch());
 
 function boot() {
   Store.load();
+  // 底部导航
+  document.querySelectorAll('.nav-item').forEach(btn => {
+    btn.addEventListener('click', () => Router.navigate(btn.dataset.route));
+  });
   Router.dispatch();
 }
 if (document.readyState === 'loading') window.addEventListener('DOMContentLoaded', boot);

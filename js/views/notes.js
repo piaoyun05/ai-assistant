@@ -13,7 +13,7 @@ const NotesView = {
       };
     }
     return {
-      title: '笔记', back: true,
+      title: '笔记', back: false,
       actions: `<button class="header-btn" data-action="multi" aria-label="批量操作">${icon('check')}</button>
                 <button class="header-btn" data-action="new" aria-label="新建笔记">${icon('plus')}</button>`
     };
@@ -45,7 +45,7 @@ const NotesView = {
 
       ${shown.length ? shown.map(n => this._noteCard(n)).join('') : `<div class="empty">${icon('note')}<p>暂无笔记，点右下角「+」新建</p></div>`}
 
-      <button class="btn btn-primary" id="note-fab" style="position:fixed;right:18px;bottom:calc(var(--safe-bottom) + 16px);border-radius:50%;width:54px;height:54px;padding:0;box-shadow:0 8px 20px rgba(79,70,229,.4)">${icon('plus')}</button>
+      <button class="btn btn-primary" id="note-fab" style="position:fixed;right:18px;bottom:calc(var(--nav-h) + var(--safe-bottom) + 16px);border-radius:50%;width:54px;height:54px;padding:0;box-shadow:0 8px 20px rgba(79,70,229,.4)">${icon('plus')}</button>
     `;
   },
 

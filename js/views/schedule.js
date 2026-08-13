@@ -7,7 +7,7 @@ const ScheduleView = {
 
   header() {
     return {
-      title: '日程 & 待办', back: true,
+      title: '日程 & 待办', back: false,
       actions: `<button class="header-btn" data-action="ai-extract" aria-label="AI 提取">${icon('sparkles')}</button>`
     };
   },

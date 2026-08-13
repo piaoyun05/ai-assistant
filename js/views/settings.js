@@ -5,10 +5,6 @@ const SettingsView = {
   name: 'settings',
   title: '我的',
 
-  header() {
-    return { title: '我的', back: true, actions: '' };
-  },
-
   render() {
     const s = Store.settings();
     const st = Store.load();

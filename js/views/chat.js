@@ -11,7 +11,7 @@ const ChatView = {
       return { title: chat ? chat.title : '对话', back: true, actions: `<button class="header-btn" data-action="menu" aria-label="菜单">${icon('more')}</button>` };
     }
     return {
-      title: 'AI 对话', back: true,
+      title: 'AI 对话', back: false,
       actions: `<button class="header-btn" data-action="new" aria-label="新建对话">${icon('plus')}</button>`
     };
   },

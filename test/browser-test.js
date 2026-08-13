@@ -56,21 +56,24 @@ function fetchText(url) {
   check('首页渲染（问候语）', !!doc.querySelector('.greeting'), doc.querySelector('.greeting')?.textContent);
   check('快捷入口渲染', doc.querySelectorAll('.quick-item').length === 4, String(doc.querySelectorAll('.quick-item').length));
   check('顶部标题为「个人AI助手」', doc.querySelector('#header-title').textContent === '个人AI助手', doc.querySelector('#header-title').textContent);
-  check('底部导航已移除', doc.querySelectorAll('.bottom-nav, .nav-item').length === 0, String(doc.querySelectorAll('.bottom-nav, .nav-item').length));
+  check('底部导航渲染 5 项', doc.querySelectorAll('.nav-item').length === 5, String(doc.querySelectorAll('.nav-item').length));
+  check('首页 tab 高亮', doc.querySelector('.nav-item[data-route="/"]').classList.contains('active'), '');
 
   // 对话页
   window.location.hash = '#/chat';
   await new Promise(r => setTimeout(r, 200));
   check('对话页渲染（列表/空态）', !!doc.querySelector('.list-item, .empty'), '');
   check('对话页顶栏仍为「个人AI助手」', doc.querySelector('#header-title').textContent === '个人AI助手', doc.querySelector('#header-title').textContent);
-  check('对话页有返回按钮', !doc.querySelector('#header-back').hidden, '');
+  check('对话页返回按钮隐藏', doc.querySelector('#header-back').hidden, '');
+  check('对话 tab 高亮', doc.querySelector('.nav-item[data-route="/chat"]').classList.contains('active'), '');
 
   // 笔记页
   window.location.hash = '#/notes';
   await new Promise(r => setTimeout(r, 200));
   check('笔记页渲染', !!doc.querySelector('#note-search'), '');
   check('笔记页顶栏仍为「个人AI助手」', doc.querySelector('#header-title').textContent === '个人AI助手', doc.querySelector('#header-title').textContent);
-  check('笔记页有返回按钮', !doc.querySelector('#header-back').hidden, '');
+  check('笔记页返回按钮隐藏', doc.querySelector('#header-back').hidden, '');
+  check('笔记 tab 高亮', doc.querySelector('.nav-item[data-route="/notes"]').classList.contains('active'), '');
 
   // 新建笔记（FAB）
   const fab = doc.querySelector('#note-fab');
@@ -118,15 +121,18 @@ function fetchText(url) {
   check('测试连接按钮', !!doc.querySelector('[data-c="test"]'), '');
   window.eval('UI.closeSheet()');
 
-  // 顶部返回按钮（首页 → 对话页 → 返回）
+  // 底部导航点击跳转（对话 tab）
   window.location.hash = '#/';
   await new Promise(r => setTimeout(r, 200));
-  window.eval(`Router.navigate('/chat')`);
+  window.eval(`document.querySelector('.nav-item[data-route="/chat"]').click()`);
   await new Promise(r => setTimeout(r, 200));
-  check('导航到对话页', !!doc.querySelector('#header-back') && !doc.querySelector('#header-back').hidden, '');
-  doc.querySelector('#header-back').click();
+  check('底部导航跳转对话页', window.location.hash === '#/chat', window.location.hash);
+  check('对话 tab 高亮', doc.querySelector('.nav-item[data-route="/chat"]').classList.contains('active'), '');
+
+  // 返回首页
+  window.location.hash = '#/';
   await new Promise(r => setTimeout(r, 200));
-  check('返回按钮回到首页', !!doc.querySelector('.greeting'), '');
+  check('回到首页', !!doc.querySelector('.greeting'), '');
 
   // OCR 页
   window.location.hash = '#/ocr';
