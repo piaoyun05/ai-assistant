@@ -19,7 +19,6 @@
   --radius-lg: 18px;
   --shadow: 0 1px 3px rgba(0,0,0,.06), 0 4px 16px rgba(0,0,0,.05);
   --shadow-lg: 0 8px 30px rgba(0,0,0,.12);
-  --nav-h: 58px;
   --header-h: 52px;
   --safe-top: env(safe-area-inset-top, 0px);
   --safe-bottom: env(safe-area-inset-bottom, 0px);
@@ -79,23 +78,9 @@ svg { width: 22px; height: 22px; display: block; }
 
 .view-root {
   padding: calc(var(--header-h) + var(--safe-top) + 10px) 14px
-    calc(var(--nav-h) + var(--safe-bottom) + 24px);
+    calc(var(--safe-bottom) + 24px);
   min-height: 100vh;
 }
-
-.bottom-nav {
-  position: fixed; bottom: 0; left: 50%; transform: translateX(-50%);
-  width: 100%; max-width: 480px; height: calc(var(--nav-h) + var(--safe-bottom));
-  padding-bottom: var(--safe-bottom);
-  display: flex; background: rgba(255,255,255,.96); backdrop-filter: blur(10px);
-  border-top: 1px solid var(--border); z-index: 50;
-}
-.nav-item {
-  flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;
-  gap: 2px; color: var(--text-3); font-size: 11px;
-}
-.nav-item svg { width: 22px; height: 22px; }
-.nav-item.active { color: var(--primary); font-weight: 600; }
 
 /* ---------- 通用组件 ---------- */
 .card {
@@ -322,7 +307,7 @@ svg { width: 22px; height: 22px; display: block; }
 
 /* 对话输入栏（固定底部） */
 .chat-input-bar {
-  position: fixed; bottom: calc(var(--nav-h) + var(--safe-bottom)); left: 50%; transform: translateX(-50%);
+  position: fixed; bottom: 0; left: 50%; transform: translateX(-50%);
   width: 100%; max-width: 480px; padding: 8px 12px calc(8px + var(--safe-bottom));
   background: rgba(255,255,255,.95); backdrop-filter: blur(10px);
   border-top: 1px solid var(--border); z-index: 40;
@@ -395,7 +380,7 @@ svg { width: 22px; height: 22px; display: block; }
 }
 
 .ai-action-bar {
-  position: fixed; bottom: calc(var(--nav-h) + var(--safe-bottom)); left: 50%; transform: translateX(-50%);
+  position: fixed; bottom: 0; left: 50%; transform: translateX(-50%);
   width: 100%; max-width: 480px; padding: 8px 10px calc(8px + var(--safe-bottom));
   background: rgba(255,255,255,.96); backdrop-filter: blur(10px);
   border-top: 1px solid var(--border); z-index: 40;
@@ -544,10 +529,5 @@ svg { width: 22px; height: 22px; display: block; }
 /* 桌面端居中美化 */
 @media (min-width: 520px) {
   body { background: #eef0f4; }
-  .app-header, .bottom-nav, .chat-input-bar, .ai-action-bar { box-shadow: 0 0 24px rgba(0,0,0,.06); }
+  .app-header, .chat-input-bar, .ai-action-bar { box-shadow: 0 0 24px rgba(0,0,0,.06); }
 }
-
-/* 全屏子页面模式（隐藏底部导航，输入栏贴底） */
-#app.thread-mode .bottom-nav { display: none; }
-#app.thread-mode .chat-input-bar, #app.thread-mode .ai-action-bar { bottom: 0; }
-#app.thread-mode .view-root { padding-bottom: calc(120px + var(--safe-bottom)); }

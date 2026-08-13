@@ -5,7 +5,6 @@
 const OcrView = {
   name: 'ocr',
   title: '图片文字识别',
-  hideNav: false,
 
   state: { imgUrl: null, file: null, text: '', busy: false, status: '' },
 

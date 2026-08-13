@@ -236,9 +236,9 @@ const Router = {
 /* ---------- 视图渲染器与页头 ---------- */
 const ViewManager = {
   render(view, rest) {
-    // 页头
+    // 页头：统一显示「个人AI助手」
     const header = view.header ? view.header(rest) : { title: view.title || '', back: false, actions: '' };
-    document.getElementById('header-title').textContent = header.title || '';
+    document.getElementById('header-title').textContent = '个人AI助手';
     const backBtn = document.getElementById('header-back');
     backBtn.hidden = !header.back;
     backBtn.onclick = () => Router.back();
@@ -248,8 +248,6 @@ const ViewManager = {
       const btn = e.target.closest('[data-action]');
       if (btn && view.onHeaderAction) view.onHeaderAction(btn.dataset.action, rest);
     };
-    document.getElementById('bottom-nav').style.display = view.hideNav ? 'none' : '';
-    document.getElementById('app').classList.toggle('thread-mode', !!view.hideNav);
 
     // 渲染
     const root = document.getElementById('view-root');
@@ -258,17 +256,7 @@ const ViewManager = {
     root.classList.add('view-enter');
     if (view.bind) view.bind(root, rest);
 
-    // 导航高亮
-    document.querySelectorAll('.nav-item').forEach(b => {
-      const tab = b.dataset.route.slice(1); // '' for home
-      const active = tab === '' ? (this._tabOf(view.name) === 'home') : (this._tabOf(view.name) === tab);
-      b.classList.toggle('active', active);
-    });
     window.scrollTo(0, 0);
-  },
-  _tabOf(name) {
-    const map = { home: 'home', chat: 'chat', notes: 'notes', note: 'notes', ocr: 'notes', schedule: 'schedule', todos: 'schedule', settings: 'settings' };
-    return map[name] || 'home';
   }
 };
 
@@ -329,10 +317,6 @@ window.addEventListener('hashchange', () => Router.dispatch());
 
 function boot() {
   Store.load();
-  // 底部导航
-  document.querySelectorAll('.nav-item').forEach(btn => {
-    btn.addEventListener('click', () => Router.navigate(btn.dataset.route));
-  });
   Router.dispatch();
 }
 if (document.readyState === 'loading') window.addEventListener('DOMContentLoaded', boot);
