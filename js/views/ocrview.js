@@ -91,7 +91,7 @@ const OcrView = {
         { label: '保存为笔记', icon: 'note', color: '#dbeafe', textColor: '#2563eb' },
         { label: 'AI 总结 / 提取要点', icon: 'sparkles', color: '#eef2ff', textColor: '#4f46e5' },
         { label: 'AI 提取日程 / 待办', icon: 'calendar', color: '#d1fae5', textColor: '#059669' },
-        { label: '发送到 AI 对话', icon: 'chat', color: '#f3e8ff', textColor: '#9333ea' }
+        { label: '发送到 AI 问答', icon: 'chat', color: '#f3e8ff', textColor: '#9333ea' }
       ]);
       if (!act) return;
       if (act.label === '保存为笔记') {
@@ -102,7 +102,7 @@ const OcrView = {
         this._aiSummary(text);
       } else if (act.label === 'AI 提取日程 / 待办') {
         this._aiExtract(text);
-      } else if (act.label === '发送到 AI 对话') {
+      } else if (act.label === '发送到 AI 问答') {
         const chat = Store.chats.create();
         Store.chats.append(chat, 'user', '请帮我处理这段 OCR 识别出的文字：\n' + text.slice(0, 500), { type: 'ocr', text });
         App.autoAsk = chat.id;

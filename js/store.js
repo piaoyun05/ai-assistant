@@ -18,7 +18,11 @@ const Store = (() => {
         baseUrl: 'https://api.deepseek.com',
         model: 'deepseek-v4-flash',
         systemPrompt: '你是"口袋AI"，一款个人智能助手。你帮用户管理笔记、待办、日程并回答问题。请用简体中文，回答简洁实用；涉及列表、结构时使用 Markdown 排版。',
-        sound: true
+        sound: true,
+        autoTitle: true,   // 根据内容自动生成笔记标题
+        autoRefine: true,  // AI 自动整理笔记内容
+        autoSync: true,    // 笔记中的日程/待办自动同步到日程模块
+        qaNotes: true      // 问答模式参考笔记内容回答
       },
       notes: [],
       todos: [],
@@ -96,7 +100,7 @@ const Store = (() => {
     get(id) { return load().notes.find(n => n.id === id) || null; },
     create(data) {
       const now = Date.now();
-      const note = { id: uid(), title: data.title || '', content: data.content || '', tags: data.tags || [], fav: false, archived: false, createdAt: now, updatedAt: now };
+      const note = { id: uid(), title: data.title || '', content: data.content || '', tags: data.tags || [], fav: false, archived: false, aiRefined: false, syncHash: '', createdAt: now, updatedAt: now };
       load().notes.push(note);
       save();
       return note;
@@ -138,7 +142,7 @@ const Store = (() => {
     create(data) {
       const now = Date.now();
       const item = { id: uid(), text: data.text || '', done: false, priority: data.priority ?? 1, dueDate: data.dueDate || null, createdAt: now, completedAt: null };
-      load().todos.push(item);
+      load().todos.push(Object.assign(item, data));
       save();
       return item;
     },
@@ -177,7 +181,7 @@ const Store = (() => {
     get(id) { return load().events.find(ev => ev.id === id) || null; },
     create(data) {
       const item = { id: uid(), title: data.title || '', start: data.start || '', end: data.end || '', location: data.location || '', note: data.note || '', createdAt: Date.now() };
-      load().events.push(item);
+      load().events.push(Object.assign(item, data));
       save();
       return item;
     },

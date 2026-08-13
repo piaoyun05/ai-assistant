@@ -66,6 +66,7 @@ function fetchText(url) {
   check('对话页顶栏仍为「个人AI助手」', doc.querySelector('#header-title').textContent === '个人AI助手', doc.querySelector('#header-title').textContent);
   check('对话页返回按钮隐藏', doc.querySelector('#header-back').hidden, '');
   check('对话 tab 高亮', doc.querySelector('.nav-item[data-route="/chat"]').classList.contains('active'), '');
+  check('底部导航改「问答」', doc.querySelector('.nav-item[data-route="/chat"] span').textContent === '问答', doc.querySelector('.nav-item[data-route="/chat"] span').textContent);
 
   // 笔记页
   window.location.hash = '#/notes';
@@ -89,6 +90,18 @@ function fetchText(url) {
   await new Promise(r => setTimeout(r, 1000));
   const stored = window.eval(`Store.notes.list({ q: '测试笔记' })`);
   check('笔记自动保存', stored.length === 1, JSON.stringify(stored));
+  check('笔记编辑器状态条', !!doc.querySelector('#note-ai-status'), '');
+
+  // 自动生成标题（无 API Key 时本地截取；从停止输入到生成约 600ms 保存 + 1800ms 标题）
+  window.eval(`const _t = Store.notes.create({ title: '', content: '' }); window.__autoTitleNote = _t.id`);
+  window.location.hash = '#/note/' + window.eval('window.__autoTitleNote');
+  await new Promise(r => setTimeout(r, 250));
+  doc.querySelector('#note-title').value = '';
+  doc.querySelector('#note-content').value = '今天去参加产品评审会议，讨论了新版本的功能清单和上线时间';
+  doc.querySelector('#note-content').dispatchEvent(new window.Event('input', { bubbles: true }));
+  await new Promise(r => setTimeout(r, 2700));
+  const autoTitle = window.eval('Store.notes.get(window.__autoTitleNote).title');
+  check('笔记自动生成标题', autoTitle.length > 0, autoTitle);
 
   // 日程页
   window.location.hash = '#/schedule';

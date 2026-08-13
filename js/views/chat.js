@@ -3,16 +3,16 @@
    ========================================================= */
 const ChatView = {
   name: 'chat',
-  title: 'AI 对话',
+  title: '问答',
 
   header(rest) {
     if (rest[0]) {
       const chat = Store.chats.get(rest[0]);
-      return { title: chat ? chat.title : '对话', back: true, actions: `<button class="header-btn" data-action="menu" aria-label="菜单">${icon('more')}</button>` };
+      return { title: chat ? chat.title : '问答', back: true, actions: `<button class="header-btn" data-action="menu" aria-label="菜单">${icon('more')}</button>` };
     }
     return {
-      title: 'AI 对话', back: false,
-      actions: `<button class="header-btn" data-action="new" aria-label="新建对话">${icon('plus')}</button>`
+      title: '问答', back: false,
+      actions: `<button class="header-btn" data-action="new" aria-label="新建问答">${icon('plus')}</button>`
     };
   },
 
@@ -24,7 +24,7 @@ const ChatView = {
   renderList() {
     const list = Store.chats.list();
     if (!list.length) {
-      return `<div class="empty">${icon('chat')}<p>还没有对话<br>点右上角「+」新建，或从首页输入框直接提问</p></div>`;
+      return `<div class="empty">${icon('chat')}<p>还没有问答记录<br>点右上角「+」新建，或从首页输入框直接提问</p></div>`;
     }
     return `<div class="card" style="padding:4px 14px">
       <ul class="list">
@@ -33,7 +33,7 @@ const ChatView = {
           return `<li class="list-item chat-list-item" data-id="${c.id}" data-action="open">
             <div class="list-item-main">
               <div class="list-item-title">${esc(c.title)}</div>
-              <div class="list-item-sub">${esc((last ? (last.role === 'user' ? '我：' : 'AI：') : '') + (last ? last.content : '（空对话）'))}</div>
+              <div class="list-item-sub">${esc((last ? (last.role === 'user' ? '我：' : 'AI：') : '') + (last ? last.content : '（空问答）'))}</div>
             </div>
             <span style="color:var(--text-3);font-size:12px;flex-shrink:0">${fmtTime(c.updatedAt)}</span>
             <button class="mini-btn" data-action="del" aria-label="删除">${icon('trash')}</button>
@@ -53,7 +53,7 @@ const ChatView = {
       btn.addEventListener('click', async e => {
         e.stopPropagation();
         const id = btn.closest('[data-id]').dataset.id;
-        const ok = await UI.confirm('删除这个对话？此操作不可恢复。', '删除');
+        const ok = await UI.confirm('删除这个问答？此操作不可恢复。', '删除');
         if (ok) { Store.chats.remove(id); ViewManager.render(this, rest); }
       });
     });
@@ -62,7 +62,7 @@ const ChatView = {
   /* ---------- 会话线程 ---------- */
   renderThread(id) {
     const chat = Store.chats.get(id);
-    if (!chat) return `<div class="empty">${icon('alert')}<p>对话不存在</p></div>`;
+    if (!chat) return `<div class="empty">${icon('alert')}<p>问答不存在</p></div>`;
     const ctx = App.chatCtx;
 
     const chips = `<div class="chip-row">
@@ -70,11 +70,11 @@ const ChatView = {
       <button class="chip" data-chip="大纲">梳理大纲</button>
       <button class="chip" data-chip="纪要">会议纪要</button>
       <button class="chip" data-chip="行动">行动清单</button>
-      <button class="chip" data-chip="总结">总结本对话</button>
+      <button class="chip" data-chip="总结">总结本次问答</button>
     </div>`;
 
     const messagesHtml = chat.messages.length ? chat.messages.map(m => this._msgHtml(m)).join('')
-      : `<div class="empty">${icon('chat')}<p>开始对话吧<br>可以提问、粘贴文字、拍照识别后发送</p></div>`;
+      : `<div class="empty">${icon('chat')}<p>有疑问，直接问<br>AI 会结合你的笔记内容回答</p></div>`;
 
     return `<div class="chat-thread">
       ${chips}
@@ -88,7 +88,7 @@ const ChatView = {
           <input type="file" id="chat-img-input" accept="image/*" hidden>
           <button class="icon-btn" data-action="mic" aria-label="语音输入">${icon('mic')}</button>
           <button class="icon-btn" data-action="img" aria-label="图片识别">${icon('image')}</button>
-          <textarea id="chat-input" rows="1" placeholder="输入消息…"></textarea>
+          <textarea id="chat-input" rows="1" placeholder="输入你的问题…"></textarea>
           <button class="icon-btn primary" data-action="send" aria-label="发送">${icon('send')}</button>
         </div>
       </div>
@@ -129,24 +129,24 @@ const ChatView = {
     if (!chat) return;
     const act = await UI.actionSheet([
       { label: '重命名', icon: 'edit' },
-      { label: '总结这段对话', icon: 'sparkles' },
-      { label: '删除对话', icon: 'trash', color: '#fee2e2', textColor: '#dc2626' }
+      { label: '总结本次问答', icon: 'sparkles' },
+      { label: '删除问答', icon: 'trash', color: '#fee2e2', textColor: '#dc2626' }
     ]);
     if (!act) return;
-    if (act.label === '删除对话') {
-      const ok = await UI.confirm('删除这个对话？此操作不可恢复。', '删除');
+    if (act.label === '删除问答') {
+      const ok = await UI.confirm('删除这个问答？此操作不可恢复。', '删除');
       if (ok) { Store.chats.remove(id); Router.navigate('/chat'); }
-    } else if (act.label === '总结这段对话') {
-      this._runCustomAI(id, '总结本对话');
+    } else if (act.label === '总结本次问答') {
+      this._runCustomAI(id, '总结本次问答');
     } else if (act.label === '重命名') {
-      const { root: sr } = UI.sheet(`<div class="sheet-title">重命名对话</div>
+      const { root: sr } = UI.sheet(`<div class="sheet-title">重命名问答</div>
         <div class="field"><input class="input" id="rename-input" value="${esc(chat.title)}" maxlength="30"></div>
         <div style="display:flex;gap:10px">
           <button class="btn btn-plain btn-block" data-act="cancel">取消</button>
           <button class="btn btn-primary btn-block" data-act="ok">保存</button>
         </div>`);
       sr.querySelector('[data-act="ok"]').addEventListener('click', () => {
-        const v = sr.querySelector('#rename-input').value.trim() || '新对话';
+        const v = sr.querySelector('#rename-input').value.trim() || '新问答';
         chat.title = v; Store.save(); UI.closeSheet();
         document.getElementById('header-title').textContent = v;
       });
@@ -162,7 +162,7 @@ const ChatView = {
     root.querySelectorAll('.chip[data-chip]').forEach(chip => {
       chip.addEventListener('click', () => {
         const k = chip.dataset.chip;
-        const cmds = { 提: '请提炼这段对话的重点，用要点列出', 大纲: '请梳理这段对话的逻辑大纲', 纪要: '请把这段对话整理成会议纪要', 行动: '请根据这段对话生成可执行的行动清单（用任务列表）', 总结: '请总结这段对话的要点与结论' };
+        const cmds = { 提: '请提炼这段问答的重点，用要点列出', 大纲: '请梳理这段问答的逻辑大纲', 纪要: '请把这段问答整理成会议纪要', 行动: '请根据这段问答生成可执行的行动清单（用任务列表）', 总结: '请总结这段问答的要点与结论' };
         if (k === '总结') { this._runCustomAI(id, cmds[k]); return; }
         this.sendMessage(id, cmds[k]);
       });
@@ -271,14 +271,29 @@ const ChatView = {
     const bubble = wrapper.querySelector('.msg-bubble');
     let full = '';
 
-    const messages = [{ role: 'system', content: Store.settings().systemPrompt }]
-      .concat(chat.messages.filter(m => m.role === 'user' || m.role === 'assistant')
-        .map(m => {
-          if (m.ctx && m.role === 'user') {
-            return { role: 'user', content: m.content + '\n\n[附：图片OCR识别文本]\n' + m.ctx.text };
-          }
-          return { role: m.role, content: m.content };
-        }));
+    const sys = Store.settings().systemPrompt;
+    const messages = [];
+    // 问答模式：根据用户问题检索笔记，注入上下文供 AI 参考回答
+    if (Store.settings().qaNotes) {
+      const qs = chat.messages.filter(m => m.role === 'user').slice(-2).map(m => m.content).join(' ');
+      const relNotes = AI.searchNotes(qs, 3);
+      const qaSys = sys + '\n\n你是用户的私人问答助手：请优先基于用户笔记的内容回答，答案准确、简洁、务实；若笔记中没有相关信息，请先明确说明「笔记里没有相关内容」，再给出一般性回答。';
+      if (relNotes.length) {
+        const noteCtx = relNotes.map((n, i) => `${i + 1}.【${n.title || '无标题'}】\n${(n.content || '').slice(0, 600)}`).join('\n\n');
+        messages.push({ role: 'system', content: qaSys + '\n\n以下是从用户笔记中检索到的相关资料，回答时请优先参考：\n\n' + noteCtx });
+      } else {
+        messages.push({ role: 'system', content: qaSys });
+      }
+    } else {
+      messages.push({ role: 'system', content: sys });
+    }
+    messages.push(...chat.messages.filter(m => m.role === 'user' || m.role === 'assistant')
+      .map(m => {
+        if (m.ctx && m.role === 'user') {
+          return { role: 'user', content: m.content + '\n\n[附：图片OCR识别文本]\n' + m.ctx.text };
+        }
+        return { role: m.role, content: m.content };
+      }));
 
     try {
       full = await AI.chat(messages, {
@@ -313,7 +328,7 @@ const ChatView = {
   /** 自定义 AI 任务（总结对话等），不进入多轮，直接输出 */
   async _runCustomAI(id, cmd) {
     const chat = Store.chats.get(id);
-    if (!chat.messages.length) { UI.toast('对话还没有内容'); return; }
+    if (!chat.messages.length) { UI.toast('问答还没有内容'); return; }
     UI.loading('正在' + cmd + '…', true);
     try {
       const result = await AI.summarizeMessages(chat.messages);

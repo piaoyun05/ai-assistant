@@ -236,6 +236,11 @@ const Router = {
 /* ---------- 视图渲染器与页头 ---------- */
 const ViewManager = {
   render(view, rest) {
+    // 清理上一视图遗留的笔记编辑定时器
+    if (App._noteCleanups.length) {
+      App._noteCleanups.forEach(fn => { try { fn(); } catch (e) {} });
+      App._noteCleanups = [];
+    }
     // 页头：统一显示「个人AI助手」
     const header = view.header ? view.header(rest) : { title: view.title || '', back: false, actions: '' };
     document.getElementById('header-title').textContent = '个人AI助手';
@@ -275,7 +280,9 @@ const App = {
   autoAsk: null,          // 进入对话页后自动发问的 chatId
   pendingOcrMode: null,   // OCR 页默认来源
   pendingEventData: null, // 日程页默认新建数据
-  pendingTodoData: null
+  pendingTodoData: null,
+  noteAiBusy: {},         // 笔记后台 AI 任务并发锁（key: note:<id>）
+  _noteCleanups: []       // 笔记编辑器定时器清理函数
 };
 
 /** 为容器内所有 [data-goto] 元素绑定跳转（支持 ?key=val 查询参数） */

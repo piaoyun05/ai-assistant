@@ -9,7 +9,7 @@ const SettingsView = {
     const s = Store.settings();
     const st = Store.load();
     const stats = [
-      ['笔记', st.notes.length], ['待办', st.todos.length], ['日程', st.events.length], ['对话', st.chats.length]
+      ['笔记', st.notes.length], ['待办', st.todos.length], ['日程', st.events.length], ['问答', st.chats.length]
     ];
     const aiStatus = s.apiKey
       ? `<div class="ai-status ok">${icon('check')}<span>AI 已配置 · ${esc(s.model)}</span></div>`
@@ -46,7 +46,7 @@ const SettingsView = {
         <div class="card-title">数据管理</div>
         ${setItem('database', '备份导出', '导出全部数据为 JSON 文件', 'export', '#dbeafe', '#2563eb')}
         ${setItem('upload', '导入备份', '从 JSON 文件恢复数据', 'import', '#fef3c7', '#d97706')}
-        ${setItem('trash', '清除全部数据', '删除本地所有笔记 / 日程 / 对话', 'clear', '#fee2e2', '#dc2626')}
+        ${setItem('trash', '清除全部数据', '删除本地所有笔记 / 日程 / 问答', 'clear', '#fee2e2', '#dc2626')}
       </div>
 
       <div class="card">
@@ -109,7 +109,7 @@ const SettingsView = {
     root.querySelector('[data-act="clear"]').addEventListener('click', async () => {
       const ok = await UI.confirm('清除全部数据？此操作不可恢复，建议先导出备份。', '清除');
       if (!ok) return;
-      const ok2 = await UI.confirm('再次确认：删除本地所有笔记、待办、日程与对话？', '全部删除');
+      const ok2 = await UI.confirm('再次确认：删除本地所有笔记、待办、日程与问答？', '全部删除');
       if (!ok2) return;
       Store.reset();
       UI.toast('已清除全部数据');
@@ -183,6 +183,14 @@ const SettingsView = {
         <label>系统提示词（可选）</label>
         <textarea class="textarea" id="set-sys" style="min-height:70px">${esc(s.systemPrompt)}</textarea>
       </div>
+      <div class="field">
+        <label style="display:block;margin-bottom:6px">智能功能</label>
+        <label class="switch-row"><input type="checkbox" id="set-autotitle" ${s.autoTitle ? 'checked' : ''}><span>内容输入完自动生成标题</span></label>
+        <label class="switch-row"><input type="checkbox" id="set-refine" ${s.autoRefine ? 'checked' : ''}><span>停止输入后 AI 自动整理并保存</span></label>
+        <label class="switch-row"><input type="checkbox" id="set-sync" ${s.autoSync ? 'checked' : ''}><span>笔记中的日程/待办同步到日程</span></label>
+        <label class="switch-row"><input type="checkbox" id="set-qa" ${s.qaNotes ? 'checked' : ''}><span>问答优先参考笔记内容回答</span></label>
+        <small style="color:var(--text-3)">前三项开启后消耗少量 API 额度，可在 AI 设置中随时关闭</small>
+      </div>
       <div style="display:flex;gap:10px">
         <button class="btn btn-outline btn-block" data-c="test">测试连接</button>
         <button class="btn btn-primary btn-block" data-c="save">保存</button>
@@ -193,7 +201,13 @@ const SettingsView = {
       const model = sheet.root.querySelector('#set-model').value;
       const baseUrl = sheet.root.querySelector('#set-base').value.trim() || 'https://api.deepseek.com';
       const sys = sheet.root.querySelector('#set-sys').value.trim();
-      Object.assign(Store.settings(), { apiKey: key, model, baseUrl, systemPrompt: sys });
+      Object.assign(Store.settings(), {
+        apiKey: key, model, baseUrl, systemPrompt: sys,
+        autoTitle: sheet.root.querySelector('#set-autotitle').checked,
+        autoRefine: sheet.root.querySelector('#set-refine').checked,
+        autoSync: sheet.root.querySelector('#set-sync').checked,
+        qaNotes: sheet.root.querySelector('#set-qa').checked
+      });
       Store.save();
       UI.closeSheet();
       UI.toast('设置已保存');

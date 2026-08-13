@@ -251,6 +251,7 @@ const NotesView = {
     ];
     return `<div class="note-editor">
       <input id="note-title" class="title-input" placeholder="标题" value="${esc(n.title)}" maxlength="60">
+      <div id="note-ai-status" class="note-ai-status">已自动保存</div>
       <div class="tag-editor">
         ${allTags.map(t => `<span class="tag ${n.tags.includes(t) ? 'active' : ''}" data-tag="${esc(t)}">${esc(t)}</span>`).join('')}
         <input class="tag-add-input" id="tag-add" placeholder="+ 添加标签" maxlength="10">
@@ -268,20 +269,44 @@ const NotesView = {
     if (!n) return;
     const titleEl = root.querySelector('#note-title');
     const contentEl = root.querySelector('#note-content');
+    const statusEl = root.querySelector('#note-ai-status');
 
-    // 自动保存（防抖）
-    let timer = null;
+    // 智能保存流程：自动保存 → 自动标题 → AI 整理 → 同步日程
+    let timer = null, titleTimer = null, refineTimer = null;
+    const setStatus = (text, ok) => {
+      if (!statusEl || !statusEl.isConnected) return;
+      statusEl.textContent = text;
+      statusEl.classList.toggle('ok', !!ok);
+    };
+    const cancelSmart = () => { clearTimeout(titleTimer); clearTimeout(refineTimer); };
+    const scheduleSmart = () => {
+      cancelSmart();
+      const cur = Store.notes.get(id);
+      const content = contentEl.value.trim();
+      if (!cur || content.length < 8) return;
+      // 标题为空时，停止输入 1.8s 自动生成标题
+      if (!cur.title.trim() && !titleEl.value.trim() && Store.settings().autoTitle) {
+        titleTimer = setTimeout(() => this.autoTitle(id, titleEl, contentEl, setStatus), 1800);
+      }
+      // 停止输入 4s 后，后台 AI 整理内容并同步日程
+      refineTimer = setTimeout(() => this.autoRefineAndSync(id, contentEl, setStatus), 4000);
+    };
     const autosave = () => {
       clearTimeout(timer);
+      setStatus('编辑中…');
       timer = setTimeout(() => {
         const cur = Store.notes.get(id);
         if (cur && (cur.title !== titleEl.value || cur.content !== contentEl.value)) {
           Store.notes.update(id, { title: titleEl.value, content: contentEl.value });
         }
+        setStatus('已自动保存', true);
+        scheduleSmart();
       }, 600);
     };
     titleEl.addEventListener('input', autosave);
     contentEl.addEventListener('input', autosave);
+    // 记录清理函数，路由切换时统一释放定时器
+    (App._noteCleanups = App._noteCleanups || []).push(() => { clearTimeout(timer); cancelSmart(); });
 
     // 标签
     root.querySelectorAll('.tag-editor .tag').forEach(tag => {
@@ -314,6 +339,90 @@ const NotesView = {
         this.runNoteAI(id, btn.dataset.ai);
       });
     });
+  },
+
+  /** 根据内容自动生成标题（AI 失败时本地截取），期间用户手动填标题则放弃 */
+  async autoTitle(id, titleEl, contentEl, setStatus) {
+    if (!titleEl.isConnected || !contentEl.isConnected) return;
+    const cur = Store.notes.get(id);
+    const content = contentEl.value.trim();
+    if (!cur || cur.title.trim() || titleEl.value.trim() || content.length < 8) return;
+    const title = await AI.genTitle(content);
+    const cur2 = Store.notes.get(id);
+    if (!cur2 || titleEl.value.trim() || !titleEl.isConnected) return;
+    titleEl.value = title;
+    Store.notes.update(id, { title });
+    setStatus('已自动生成标题', true);
+  },
+
+  /** 后台 AI 整理笔记内容并同步日程（静默执行，不打断编辑） */
+  async autoRefineAndSync(id, contentEl, setStatus) {
+    if (!contentEl.isConnected) return;
+    const cur = Store.notes.get(id);
+    const content = contentEl.value.trim();
+    if (!cur || content.length < 15) return;
+    const busyKey = 'note:' + id;
+    if (App.noteAiBusy[busyKey]) return;
+    App.noteAiBusy[busyKey] = true;
+    const settings = Store.settings();
+
+    try {
+      // 1) AI 整理并后台保存
+      if (settings.apiKey && settings.autoRefine) {
+        setStatus('AI 整理中…');
+        const snapshot = content;
+        try {
+          const result = await AI.refineNote(content, cur.title);
+          const cur2 = Store.notes.get(id);
+          // 仅当用户未继续输入时应用整理结果，避免覆盖正在编辑的内容
+          if (cur2 && contentEl.isConnected && contentEl.value.trim() === snapshot) {
+            Store.notes.update(id, { content: result, aiRefined: true });
+            contentEl.value = result;
+            setStatus('已用 AI 整理并保存', true);
+          } else {
+            setStatus('已自动保存（内容有变化，跳过整理）', true);
+          }
+        } catch (e) {
+          setStatus('已自动保存（AI 整理失败）');
+        }
+      }
+      // 2) 笔记中的日程/待办同步到日程模块（按内容哈希去重）
+      if (settings.apiKey && settings.autoSync) {
+        await this.syncToSchedule(id);
+      }
+    } finally {
+      App.noteAiBusy[busyKey] = false;
+    }
+  },
+
+  /** 将笔记内容中的日程/待办同步到日程模块；内容未变则跳过，先删除旧来源再新增保证与笔记一致 */
+  async syncToSchedule(id) {
+    const cur = Store.notes.get(id);
+    if (!cur) return;
+    const content = (cur.content || '').trim();
+    if (content.length < 15) return;
+    const h = AI.hash(content);
+    if ((cur.syncHash || '') === h) return; // 内容未变，避免重复同步
+    let data;
+    try { data = await AI.extractTasks(content); }
+    catch (e) { return; }
+    // 移除该笔记此前同步的日程/待办（仅来源标记匹配项），保证与笔记内容一致
+    Store.load().events = Store.load().events.filter(ev => ev.srcNote !== id);
+    Store.load().todos = Store.load().todos.filter(t => t.srcNote !== id);
+    const priMap = { '高': 2, '中': 1, '低': 0 };
+    (data.events || []).forEach(ev => {
+      Store.events.create({
+        title: ev.title, start: ev.start, end: ev.end || '', location: ev.location || '',
+        note: ((ev.note || '') ? ev.note + ' ' : '') + '（来自笔记：' + (cur.title || '无标题') + '）',
+        srcNote: id
+      });
+    });
+    (data.todos || []).forEach(td => {
+      Store.todos.create({ text: td.text, priority: priMap[td.priority] ?? 1, dueDate: td.dueDate || null, srcNote: id });
+    });
+    Store.notes.update(id, { syncHash: h });
+    const synced = (data.events || []).length + (data.todos || []).length;
+    if (synced > 0) UI.toast('已同步 ' + synced + ' 条到日程');
   },
 
   openAIMenu(id) {

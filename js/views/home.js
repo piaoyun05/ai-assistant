@@ -33,7 +33,7 @@ const HomeView = {
         <div class="ai-entry-extra">
           <button data-goto="/ocr?mode=camera">${icon('camera')} 拍照</button>
           <button data-goto="/ocr?mode=album">${icon('image')} 相册</button>
-          <button data-goto="/chat">${icon('chat')} 历史对话</button>
+          <button data-goto="/chat">${icon('chat')} 历史问答</button>
         </div>
       </div>
 
@@ -86,7 +86,7 @@ const HomeView = {
       </div>
 
       <div class="card">
-        <div class="card-title">最近对话 <small>共 ${Store.chats.all().length} 个</small></div>
+        <div class="card-title">最近问答 <small>共 ${Store.chats.all().length} 个</small></div>
         ${recentChats.length ? recentChats.map(c => {
           const last = c.messages[c.messages.length - 1];
           return `<div class="today-item" data-goto="/chat/${c.id}">
@@ -94,7 +94,7 @@ const HomeView = {
             <span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(c.title)}</span>
             <time>${fmtTime(c.updatedAt)}</time>
           </div>`;
-        }).join('') : `<div class="empty" style="padding:18px"><p>暂无对话</p></div>`}
+        }).join('') : `<div class="empty" style="padding:18px"><p>暂无问答</p></div>`}
       </div>
     `;
   },

@@ -135,6 +135,11 @@ svg { width: 22px; height: 22px; display: block; }
 .input:focus, .textarea:focus, .select:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(79,70,229,.12); }
 .textarea { min-height: 120px; resize: vertical; line-height: 1.6; }
 .select { appearance: none; background: #fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%239ca3af' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E") no-repeat right 12px center; padding-right: 36px; }
+.switch-row {
+  display: flex; align-items: center; gap: 10px; font-size: 14px; color: var(--text-1);
+  padding: 8px 0; cursor: pointer; user-select: none;
+}
+.switch-row input { width: 18px; height: 18px; accent-color: var(--primary); flex-shrink: 0; }
 
 /* 标签 */
 .tag {
@@ -386,6 +391,11 @@ svg { width: 22px; height: 22px; display: block; }
   width: 100%; border: none; font-size: 15px; line-height: 1.7;
   padding: 10px 2px; background: none; min-height: 44vh; resize: none;
 }
+.note-ai-status {
+  font-size: 12px; color: var(--text-3); padding: 0 2px 6px; min-height: 16px;
+  transition: color .2s;
+}
+.note-ai-status.ok { color: #059669; }
 .tag-editor { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 4px 0 8px; }
 .tag-editor .tag { cursor: pointer; user-select: none; }
 .tag-editor .tag.active { background: var(--primary); color: #fff; }

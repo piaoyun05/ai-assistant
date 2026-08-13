@@ -241,5 +241,51 @@ const AI = (() => {
     return ask(sys, text, { stream: false });
   }
 
-  return { chat, ask, noteAction, extractTasks, weekReview, summarizeNotes, summarizeMessages, endpoint, mapError };
+  /** 根据笔记内容生成简短标题（AI 失败时回退本地截取） */
+  async function genTitle(content) {
+    const fallback = () => (content || '').replace(/\s+/g, ' ').trim().slice(0, 12) || '无标题笔记';
+    if (!Store.settings().apiKey) return fallback();
+    try {
+      const sys = '你是笔记标题助手。请根据内容生成一个简洁的中文标题，不超过 12 个字。只输出标题本身，不要引号、句号、多余文字。';
+      const t = (await ask(sys, (content || '').slice(0, 800), { stream: false, temperature: 0.3 })).trim();
+      const clean = t.replace(/^["'「」『』《》【】]+|["'「」『』《》【】]+$/g, '').replace(/\s+/g, ' ').slice(0, 20);
+      return clean || fallback();
+    } catch (e) { return fallback(); }
+  }
+
+  /** AI 整理笔记内容（纠错、分段、保留全部信息），失败时原样返回 */
+  async function refineNote(content, title = '') {
+    const sys = '你是笔记整理助手。请对用户的笔记做整理：1) 修正错别字与语病；2) 适当分段、补充小标题；3) 保留全部要点、不丢失任何信息；4) 不新增用户没有写过的内容。直接输出整理后的笔记正文（可用 Markdown），不要任何开场白或结束语。';
+    const input = (title && title.trim() && title.trim() !== '无标题' ? `【笔记标题】${title}\n\n` : '') + (content || '');
+    return ask(sys, input, { stream: false, temperature: 0.3 });
+  }
+
+  /** 简单字符串哈希（用于笔记内容去重判断） */
+  function hash(text) {
+    let h = 5381;
+    const s = String(text == null ? '' : text);
+    for (let i = 0; i < s.length; i++) h = ((h << 5) + h + s.charCodeAt(i)) | 0;
+    return (h >>> 0).toString(36);
+  }
+
+  /** 基于关键词从笔记库检索相关笔记（标题命中权重更高、内容靠前命中权重更高） */
+  function searchNotes(query, limit = 3) {
+    const qs = String(query || '').toLowerCase().split(/[\s,，。.、;；:：!！?？]+/).filter(w => w.length >= 2);
+    if (!qs.length) return [];
+    const scored = Store.notes.list({ archived: false }).map(n => {
+      const title = (n.title || '').toLowerCase();
+      const content = (n.content || '').toLowerCase();
+      let score = 0;
+      for (const q of qs) {
+        if (title.includes(q)) score += 6;
+        const idx = content.indexOf(q);
+        if (idx >= 0) score += 2 + Math.max(0, 3 - Math.floor(idx / 200));
+      }
+      return { n, score };
+    }).filter(x => x.score > 0);
+    scored.sort((a, b) => b.score - a.score);
+    return scored.slice(0, limit).map(x => x.n);
+  }
+
+  return { chat, ask, noteAction, extractTasks, weekReview, summarizeNotes, summarizeMessages, genTitle, refineNote, hash, searchNotes, endpoint, mapError };
 })();
