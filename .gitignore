@@ -1,0 +1,14 @@
+# 依赖
+node_modules/
+
+# 敏感文件（token 临时文件，绝不提交）
+.git_token.tmp
+*.token
+.env
+
+# 系统文件
+.DS_Store
+Thumbs.db
+
+# 日志
+*.log
