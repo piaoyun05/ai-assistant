@@ -38,57 +38,73 @@ const AI = (() => {
     if (jsonMode) { body.response_format = { type: 'json_object' }; body.stream = false; }
     if (maxTokens) body.max_tokens = maxTokens;
 
-    const resp = await fetch(endpoint(), {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer ' + (s.apiKey || '').trim()
-      },
-      body: JSON.stringify(body),
-      signal
-    });
+    // 超时保护：避免请求挂起导致界面一直显示「处理中」
+    // 直连 DeepSeek 在网络不稳时 fetch 可能无限 pending，这里统一 90 秒中止
+    const TIMEOUT_MS = 90e3;
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), TIMEOUT_MS);
+    const cleanup = () => clearTimeout(timer);
 
-    if (!resp.ok) {
-      let detail = '';
-      try { const d = await resp.json(); detail = d.error?.message || JSON.stringify(d); } catch (e) { detail = await resp.text().catch(() => ''); }
-      const msg = mapError(resp.status, detail);
-      throw new Error(msg);
-    }
+    try {
+      const resp = await fetch(endpoint(), {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ' + (s.apiKey || '').trim()
+        },
+        body: JSON.stringify(body),
+        signal: signal || ctrl.signal
+      });
 
-    if (!useStream) {
-      const data = await resp.json();
-      return data.choices?.[0]?.message?.content || '';
-    }
+      if (!resp.ok) {
+        let detail = '';
+        try { const d = await resp.json(); detail = d.error?.message || JSON.stringify(d); } catch (e) { detail = await resp.text().catch(() => ''); }
+        const msg = mapError(resp.status, detail);
+        throw new Error(msg);
+      }
 
-    // ---- SSE 流式解析 ----
-    const reader = resp.body.getReader();
-    const decoder = new TextDecoder();
-    let buffer = '';
-    let full = '';
+      if (!useStream) {
+        const data = await resp.json();
+        return data.choices?.[0]?.message?.content || '';
+      }
 
-    async function pump() {
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        buffer += decoder.decode(value, { stream: true });
-        const parts = buffer.split('\n\n');
-        buffer = parts.pop();
-        for (const part of parts) {
-          for (const line of part.split('\n')) {
-            if (!line.startsWith('data:')) continue;
-            const payload = line.slice(5).trim();
-            if (payload === '[DONE]') return;
-            try {
-              const json = JSON.parse(payload);
-              const delta = json.choices?.[0]?.delta?.content;
-              if (delta) { full += delta; onDelta(delta); }
-            } catch (e) { /* 忽略解析失败的行 */ }
+      // ---- SSE 流式解析 ----
+      const reader = resp.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = '';
+      let full = '';
+
+      async function pump() {
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          buffer += decoder.decode(value, { stream: true });
+          const parts = buffer.split('\n\n');
+          buffer = parts.pop();
+          for (const part of parts) {
+            for (const line of part.split('\n')) {
+              if (!line.startsWith('data:')) continue;
+              const payload = line.slice(5).trim();
+              if (payload === '[DONE]') return;
+              try {
+                const json = JSON.parse(payload);
+                const delta = json.choices?.[0]?.delta?.content;
+                if (delta) { full += delta; onDelta(delta); }
+              } catch (e) { /* 忽略解析失败的行 */ }
+            }
           }
         }
       }
+      await pump();
+      return full;
+    } catch (e) {
+      if (e.name === 'AbortError') {
+        throw new Error('请求超时（' + TIMEOUT_MS / 1000 + ' 秒），请检查网络后重试。若使用国内网络直连 DeepSeek 不稳定，可在「我的 → AI 设置」更换接口地址或配置代理');
+      }
+      throw e;
+    } finally {
+      cleanup();
     }
-    await pump();
-    return full;
   }
 
   function mapError(status, detail) {

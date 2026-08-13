@@ -29,6 +29,9 @@
 
 * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 
+/* 确保 HTML hidden 属性生效（防止 display 规则覆盖导致遮罩常驻） */
+[hidden] { display: none !important; }
+
 html, body { height: 100%; }
 
 body {

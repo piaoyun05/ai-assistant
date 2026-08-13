@@ -129,6 +129,11 @@ function fetchText(url) {
   await new Promise(r => setTimeout(r, 200));
   check('首页概览数据联动', !!doc.querySelector('.overview-num'), '');
 
+  // 回归：遮罩层初始必须隐藏（CSS display 覆盖 hidden 曾导致一直显示「处理中」）
+  check('遮罩层初始隐藏', doc.querySelector('#loading-mask').hidden && doc.querySelector('#confirm-mask').hidden && doc.querySelector('#sheet-mask').hidden, '');
+  const cssText = await fetchText(BASE + 'css/app.css');
+  check('CSS 含 [hidden] 规则', /\[hidden\]\s*{[^}]*display:\s*none/i.test(cssText), '');
+
   const errBlocking = errors.filter(e => !/scrollTo/.test(e));
   check('无运行时错误', errBlocking.length === 0, errBlocking.slice(0, 6).join(' | '));
 
