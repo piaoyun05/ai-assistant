@@ -91,7 +91,7 @@ const OcrView = {
       self.state.text = text;
       const act = await UI.actionSheet([
         { label: '保存为笔记', icon: 'note', color: '#dbeafe', textColor: '#2563eb' },
-        { label: 'AI 总结 / 提取要点', icon: 'sparkles', color: '#eef2ff', textColor: '#4f46e5' },
+        { label: 'AI 总结 / 提取要点', icon: 'sparkles', color: '#ECE9FF', textColor: '#7C6CFF' },
         { label: 'AI 提取日程 / 待办', icon: 'calendar', color: '#d1fae5', textColor: '#059669' },
         { label: '发送到 AI 问答', icon: 'chat', color: '#f3e8ff', textColor: '#9333ea' }
       ]);

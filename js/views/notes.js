@@ -81,7 +81,7 @@ const NotesView = {
     const n = Store.notes.get(id);
     if (!n) return;
     const act = await UI.actionSheet([
-      { label: 'AI 操作', icon: 'sparkles', color: '#eef2ff', textColor: '#4f46e5' },
+      { label: 'AI 操作', icon: 'sparkles', color: '#ECE9FF', textColor: '#7C6CFF' },
       { label: n.fav ? '取消收藏' : '收藏', icon: 'star', color: '#fef3c7', textColor: '#d97706' },
       { label: n.archived ? '取消归档' : '归档', icon: 'archive' },
       { label: '保存为新笔记', icon: 'copy' },
@@ -148,7 +148,7 @@ const NotesView = {
         const n = Store.notes.get(id);
         const act = await UI.actionSheet([
           { label: '编辑', icon: 'edit' },
-          { label: 'AI 操作', icon: 'sparkles', color: '#eef2ff', textColor: '#4f46e5' },
+          { label: 'AI 操作', icon: 'sparkles', color: '#ECE9FF', textColor: '#7C6CFF' },
           { label: n.archived ? '取消归档' : '归档', icon: 'archive' },
           { label: n.fav ? '取消收藏' : '收藏', icon: 'star', color: '#fef3c7', textColor: '#d97706' },
           { label: '删除', icon: 'trash', color: '#fee2e2', textColor: '#dc2626' }
@@ -438,7 +438,7 @@ const NotesView = {
       { a: 'expand', t: '扩写', icon: 'plus' },
       { a: 'condense', t: '精简', icon: 'scan' }
     ];
-    UI.actionSheet(actions.map(a => ({ label: a.t, icon: a.icon, color: '#eef2ff', textColor: '#4f46e5' })))
+    UI.actionSheet(actions.map(a => ({ label: a.t, icon: a.icon, color: '#ECE9FF', textColor: '#7C6CFF' })))
       .then(act => { if (act) this.runNoteAI(id, actions.find(a => a.t === act.label).a); });
   },
 
@@ -449,7 +449,7 @@ const NotesView = {
       { a: 'summarize', t: '总结笔记' }, { a: 'outline', t: '提炼要点' }, { a: 'actionlist', t: '生成行动清单' },
       { a: 'structure', t: '结构化整理' }, { a: 'translate', t: '翻译' }, { a: 'expand', t: '扩写' }, { a: 'condense', t: '精简' }
     ];
-    const act = await UI.actionSheet(actions.map(a => ({ label: a.t, icon: 'sparkles', color: '#eef2ff', textColor: '#4f46e5' })));
+    const act = await UI.actionSheet(actions.map(a => ({ label: a.t, icon: 'sparkles', color: '#ECE9FF', textColor: '#7C6CFF' })));
     if (!act) return;
     this.runNoteAI(id, actions.find(a => a.t === act.label).a);
   },
