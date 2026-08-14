@@ -8,254 +8,205 @@
 <style>
   :root {
     --bg: #F8F9FC;
-    --card: rgba(255,255,255,.72);
+    --card: rgba(255,255,255,.65);
     --text-1: #1A1B25;
     --text-2: #5B5E72;
     --text-3: #9DA1B5;
     --primary: #7C6CFF;
     --primary-soft: #ECE9FF;
-    --border: rgba(124,108,255,.12);
-    --radius: 20px;
-    --radius-sm: 14px;
-    --shadow: 0 1px 2px rgba(26,27,37,.04), 0 8px 24px rgba(124,108,255,.06);
+    --border: rgba(255,255,255,.7);
+    --radius: 22px;
+    --radius-md: 18px;
+    --radius-lg: 28px;
   }
   * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
-  html, body {
-    height:100%;
-    font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei","Helvetica Neue",sans-serif;
-    color:var(--text-1);
-    background:var(--bg);
-  }
-  body {
-    display:flex; justify-content:center; align-items:flex-start;
-    min-height:100vh; padding:24px 0;
-  }
+  html, body { height:100%; font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei","Helvetica Neue",sans-serif; color:var(--text-1); background:var(--bg); }
+  body { display:flex; justify-content:center; align-items:flex-start; min-height:100vh; padding:24px 0; }
 
-  /* 手机外壳：移动端竖屏 */
+  /* 手机外壳 */
   .phone {
     position:relative;
     width:390px; max-width:100%;
     height:844px; max-height:92vh;
-    border-radius:44px;
+    border-radius:50px;
     background:var(--bg);
     overflow:hidden;
-    box-shadow:0 24px 70px rgba(26,27,37,.18), 0 0 0 10px #fff, 0 0 0 12px #E8EAF2;
+    box-shadow:0 24px 70px rgba(26,27,37,.14), 0 0 0 6px rgba(255,255,255,.95);
   }
 
-  /* 顶部淡紫色柔和渐变柔光背景 */
+  /* 顶部淡紫柔光：大范围柔和扩散 */
   .glow {
     position:absolute; inset:0; pointer-events:none; z-index:0;
     background:
-      radial-gradient(120% 60% at 50% -8%, rgba(167,148,255,.55) 0%, rgba(167,148,255,0) 55%),
-      radial-gradient(80% 42% at 18% 4%, rgba(196,182,255,.40) 0%, rgba(196,182,255,0) 60%),
-      radial-gradient(85% 45% at 86% 2%, rgba(150,170,255,.32) 0%, rgba(150,170,255,0) 62%),
-      linear-gradient(180deg, rgba(245,243,255,.65) 0%, rgba(248,249,252,0) 38%);
-    filter:blur(.5px);
+      radial-gradient(140% 80% at 50% -10%, rgba(190,178,255,.65) 0%, rgba(190,178,255,0) 60%),
+      radial-gradient(80% 50% at 14% 8%, rgba(200,190,255,.45) 0%, rgba(200,190,255,0) 60%),
+      radial-gradient(80% 50% at 88% 6%, rgba(180,195,255,.40) 0%, rgba(180,195,255,0) 65%),
+      linear-gradient(180deg, rgba(238,235,255,.55) 0%, rgba(248,249,252,0) 45%);
   }
-  /* 细微颗粒柔光叠加，提升高级质感 */
   .glow::after {
-    content:""; position:absolute; inset:0;
-    background:radial-gradient(60% 30% at 50% 12%, rgba(255,255,255,.55) 0%, rgba(255,255,255,0) 70%);
+    content:""; position:absolute; left:0; right:0; top:0; height:50%;
+    background:radial-gradient(50% 22% at 50% 18%, rgba(255,255,255,.55) 0%, rgba(255,255,255,0) 70%);
   }
 
   .screen {
     position:relative; z-index:1;
     height:100%; overflow-y:auto;
-    padding:54px 20px 26px;
-    display:flex; flex-direction:column; gap:18px;
+    padding:54px 22px 110px;
+    display:flex; flex-direction:column; gap:16px;
   }
   .screen::-webkit-scrollbar { width:0; }
 
   /* 顶部标题 */
-  .topbar { text-align:center; padding:6px 0 2px; }
+  .topbar { text-align:center; padding:8px 0 6px; }
   .topbar h1 {
-    font-size:21px; font-weight:600; letter-spacing:2px;
-    color:#2A2B3A;
+    font-size:24px; font-weight:700; letter-spacing:1.5px; color:#2A2B3A;
     text-shadow:0 1px 0 rgba(255,255,255,.6);
   }
-  .topbar .sub {
-    margin-top:6px; font-size:12.5px; color:var(--text-3); letter-spacing:.5px;
+  .topbar .sub { margin-top:6px; font-size:12px; color:#A8AAC0; letter-spacing:2px; font-weight:500; }
+
+  /* 卡片基础：极轻阴影、通透 */
+  .card {
+    background:var(--card);
+    backdrop-filter:blur(20px) saturate(160%);
+    -webkit-backdrop-filter:blur(20px) saturate(160%);
+    border:1px solid rgba(255,255,255,.7);
+    border-radius:var(--radius);
+    box-shadow:0 1px 2px rgba(26,27,37,.03);
   }
 
   /* 问候卡片 */
-  .hero {
-    background:var(--card);
-    backdrop-filter:blur(18px) saturate(160%);
-    -webkit-backdrop-filter:blur(18px) saturate(160%);
-    border:1px solid rgba(255,255,255,.6);
-    border-radius:var(--radius);
-    padding:18px;
-    box-shadow:var(--shadow);
-  }
+  .hero { padding:22px 22px 20px; }
   .hero .hi { font-size:13px; color:var(--text-3); }
-  .hero .name { font-size:18px; font-weight:600; margin-top:2px; }
+  .hero .name { font-size:19px; font-weight:600; margin-top:4px; }
   .hero .tip {
-    margin-top:12px; padding:11px 13px; border-radius:var(--radius-sm);
-    background:linear-gradient(135deg, var(--primary-soft), #F3F0FF);
-    color:#5B4ED6; font-size:12.5px; line-height:1.6;
+    margin-top:14px; padding:13px 14px; border-radius:16px;
+    background:#F1EEFF;
+    color:#6A5BD8; font-size:12.5px; line-height:1.65;
     display:flex; gap:8px; align-items:flex-start;
   }
-  .hero .tip svg { flex:0 0 auto; margin-top:1px; }
+  .hero .tip svg { flex:0 0 auto; margin-top:2px; }
 
-  /* 快捷提问/搜索框 */
+  /* 搜索框 */
   .ask {
-    display:flex; align-items:center; gap:10px;
-    background:var(--card);
-    backdrop-filter:blur(18px); -webkit-backdrop-filter:blur(18px);
-    border:1px solid var(--border);
-    border-radius:var(--radius);
-    padding:13px 15px;
-    box-shadow:var(--shadow);
+    display:flex; align-items:center; gap:12px;
+    padding:14px 14px 14px 16px;
   }
   .ask input {
-    flex:1; border:0; outline:0; background:transparent;
-    font-size:14px; color:var(--text-1);
+    flex:1; border:0; outline:0; background:transparent; font-size:14px; color:var(--text-1);
   }
   .ask input::placeholder { color:var(--text-3); }
   .ask .send {
-    width:34px; height:34px; border-radius:11px; border:0;
+    width:40px; height:40px; border-radius:50%; border:0;
     background:linear-gradient(135deg,#7C6CFF,#9D8CFF);
     color:#fff; display:flex; align-items:center; justify-content:center;
-    box-shadow:0 4px 12px rgba(124,108,255,.35);
+    box-shadow:0 6px 18px rgba(124,108,255,.35);
   }
 
   /* 功能网格 */
   .grid {
-    display:grid; grid-template-columns:repeat(3,1fr); gap:12px;
+    display:grid; grid-template-columns:repeat(3,1fr); gap:14px;
   }
   .tile {
     background:var(--card);
-    backdrop-filter:blur(16px); -webkit-backdrop-filter:blur(16px);
-    border:1px solid rgba(255,255,255,.6);
-    border-radius:var(--radius-sm);
-    padding:15px 10px; text-align:center;
-    box-shadow:var(--shadow);
+    backdrop-filter:blur(18px); -webkit-backdrop-filter:blur(18px);
+    border:1px solid rgba(255,255,255,.7);
+    border-radius:var(--radius);
+    padding:24px 10px 18px; text-align:center;
+    box-shadow:0 1px 2px rgba(26,27,37,.03);
+    display:flex; flex-direction:column; align-items:center; gap:14px;
   }
   .tile .ic {
-    width:42px; height:42px; margin:0 auto 9px;
-    border-radius:13px; display:flex; align-items:center; justify-content:center;
+    width:60px; height:60px;
+    border-radius:18px;
+    display:flex; align-items:center; justify-content:center;
     color:#fff;
   }
-  .tile .t { font-size:12.5px; color:var(--text-2); font-weight:500; }
-  .c1 { background:linear-gradient(135deg,#7C6CFF,#A18CFF); }
-  .c2 { background:linear-gradient(135deg,#19B8A6,#4FD1C5); }
-  .c3 { background:linear-gradient(135deg,#F6A23C,#FFC36B); }
+  .tile .t { font-size:13.5px; color:var(--text-2); font-weight:500; }
+  .c1 { background:linear-gradient(135deg,#7C6CFF,#A295FF); }
+  .c2 { background:linear-gradient(135deg,#28C9A8,#56DDC2); }
+  .c3 { background:linear-gradient(135deg,#F8A940,#FFC26E); }
   .c4 { background:linear-gradient(135deg,#5B8DEF,#7FB0FF); }
   .c5 { background:linear-gradient(135deg,#E26A8C,#FF9BB6); }
-  .c6 { background:linear-gradient(135deg,#9A7BFF,#C0A3FF); }
+  .c6 { background:linear-gradient(135deg,#9A7BFF,#B89AFF); }
 
-  /* 今日概览 */
-  .section-title { font-size:13px; color:var(--text-3); margin:4px 4px 0; letter-spacing:.5px; }
-  .card {
-    background:var(--card);
-    backdrop-filter:blur(16px); -webkit-backdrop-filter:blur(16px);
-    border:1px solid rgba(255,255,255,.6);
-    border-radius:var(--radius);
-    padding:6px 16px; box-shadow:var(--shadow);
-  }
-  .row {
-    display:flex; align-items:center; gap:12px;
-    padding:13px 0; border-bottom:1px solid rgba(124,108,255,.08);
-  }
-  .row:last-child { border-bottom:0; }
-  .row .dot { width:8px; height:8px; border-radius:50%; flex:0 0 auto; }
-  .row .body { flex:1; min-width:0; }
-  .row .title { font-size:14px; font-weight:500; }
-  .row .meta { font-size:11.5px; color:var(--text-3); margin-top:2px; }
-  .row .time { font-size:12px; color:var(--primary); font-weight:600; flex:0 0 auto; }
-
-  /* 底部导航 */
+  /* 底部 Tab 浮动条 */
   .nav {
-    position:absolute; left:10px; right:10px; bottom:12px; z-index:2;
+    position:absolute; left:16px; right:16px; bottom:16px; z-index:3;
     display:flex; justify-content:space-around; align-items:center;
-    background:rgba(255,255,255,.82);
-    backdrop-filter:blur(20px); -webkit-backdrop-filter:blur(20px);
+    background:rgba(255,255,255,.85);
+    backdrop-filter:blur(22px) saturate(160%);
+    -webkit-backdrop-filter:blur(22px) saturate(160%);
     border:1px solid rgba(255,255,255,.7);
-    border-radius:22px; padding:10px 6px;
-    box-shadow:0 10px 30px rgba(26,27,37,.10);
+    border-radius:var(--radius-lg); padding:10px 8px;
+    box-shadow:0 10px 30px rgba(26,27,37,.08);
   }
-  .nav .item { display:flex; flex-direction:column; align-items:center; gap:3px; color:var(--text-3); }
+  .nav .item { display:flex; flex-direction:column; align-items:center; gap:4px; color:#B0B3C6; padding:4px 6px; }
   .nav .item.active { color:var(--primary); }
-  .nav .item .lab { font-size:10px; }
-  .screen { padding-bottom:96px; }
+  .nav .item .lab { font-size:10.5px; font-weight:500; }
 </style>
 </head>
 <body>
   <div class="phone">
     <div class="glow"></div>
     <div class="screen">
-      <!-- 顶部标题 -->
+
       <div class="topbar">
         <h1>个人 AI 助手</h1>
         <div class="sub">Personal AI Assistant</div>
       </div>
 
-      <!-- 问候卡片 -->
-      <div class="hero">
+      <div class="card hero">
         <div class="hi">下午好</div>
         <div class="name">今天也要高效而从容 ✨</div>
         <div class="tip">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#5B4ED6" stroke-width="2"><path d="M12 3l1.9 4.8L19 9l-4.3 3.2L16 17l-4-2.6L8 17l1.3-4.8L5 9l5.1-1.2L12 3z"/></svg>
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#6A5BD8" stroke-width="2"><path d="M12 3l1.9 4.8L19 9l-4.3 3.2L16 17l-4-2.6L8 17l1.3-4.8L5 9l5.1-1.2L12 3z"/></svg>
           <span>已接入你的笔记、日程与待办，可随时问我「今天有什么安排」。</span>
         </div>
       </div>
 
-      <!-- 快捷提问 -->
-      <div class="ask">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#9DA1B5" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+      <div class="card ask">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#9DA1B5" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
         <input placeholder="问点什么，AI 会结合你的数据回答…">
-        <button class="send">
-          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg>
+        <button class="send" aria-label="发送">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg>
         </button>
       </div>
 
-      <!-- 功能网格 -->
       <div class="grid">
-        <div class="tile"><div class="ic c1"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><path d="M4 5h16v11H7l-3 3V5z"/></svg></div><div class="t">AI 问答</div></div>
-        <div class="tile"><div class="ic c2"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><path d="M5 4h11l3 3v13H5z"/><path d="M9 9h6M9 13h6"/></svg></div><div class="t">笔记</div></div>
-        <div class="tile"><div class="ic c3"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><rect x="4" y="5" width="16" height="14" rx="2"/><path d="M8 3v4M16 3v4M4 10h16"/></svg></div><div class="t">日程</div></div>
-        <div class="tile"><div class="ic c4"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><path d="M9 11l3 3 8-8"/><path d="M20 12v7a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h9"/></svg></div><div class="t">待办</div></div>
-        <div class="tile"><div class="ic c5"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><path d="M3 7h18v12H3z"/><path d="M3 7l9 6 9-6"/></svg></div><div class="t">OCR 识别</div></div>
-        <div class="tile"><div class="ic c6"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19 12a7 7 0 0 0-.1-1.2l2-1.6-2-3.4-2.4 1a7 7 0 0 0-2-1.2L14 2h-4l-.5 2.6a7 7 0 0 0-2 1.2l-2.4-1-2 3.4 2 1.6A7 7 0 0 0 5 12c0 .4 0 .8.1 1.2l-2 1.6 2 3.4 2.4-1a7 7 0 0 0 2 1.2L10 22h4l.5-2.6a7 7 0 0 0 2-1.2l2.4 1 2-3.4-2-1.6c.1-.4.1-.8.1-1.2z"/></svg></div><div class="t">我的</div></div>
+        <div class="tile">
+          <div class="ic c1"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><path d="M4 5h16v11H7l-3 3V5z"/></svg></div>
+          <div class="t">AI 问答</div>
+        </div>
+        <div class="tile">
+          <div class="ic c2"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><path d="M5 4h11l3 3v13H5z"/><path d="M9 9h6M9 13h6"/></svg></div>
+          <div class="t">笔记</div>
+        </div>
+        <div class="tile">
+          <div class="ic c3"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><rect x="4" y="5" width="16" height="14" rx="2"/><path d="M8 3v4M16 3v4M4 10h16"/></svg></div>
+          <div class="t">日程</div>
+        </div>
+        <div class="tile">
+          <div class="ic c4"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><path d="M9 11l3 3 8-8"/><path d="M20 12v7a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h9"/></svg></div>
+          <div class="t">待办</div>
+        </div>
+        <div class="tile">
+          <div class="ic c5"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><path d="M3 7h18v12H3z"/><path d="M3 7l9 6 9-6"/></svg></div>
+          <div class="t">OCR 识别</div>
+        </div>
+        <div class="tile">
+          <div class="ic c6"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19 12a7 7 0 0 0-.1-1.2l2-1.6-2-3.4-2.4 1a7 7 0 0 0-2-1.2L14 2h-4l-.5 2.6a7 7 0 0 0-2 1.2l-2.4-1-2 3.4 2 1.6A7 7 0 0 0 5 12c0 .4 0 .8.1 1.2l-2 1.6 2 3.4 2.4-1a7 7 0 0 0 2 1.2L10 22h4l.5-2.6a7 7 0 0 0 2-1.2l2.4 1 2-3.4-2-1.6c.1-.4.1-.8.1-1.2z"/></svg></div>
+          <div class="t">我的</div>
+        </div>
       </div>
 
-      <!-- 今日概览 -->
-      <div class="section-title">今日概览</div>
-      <div class="card">
-        <div class="row">
-          <div class="dot" style="background:#F6A23C"></div>
-          <div class="body">
-            <div class="title">项目周会</div>
-            <div class="meta">产品评审 · 会议室 B</div>
-          </div>
-          <div class="time">14:30</div>
-        </div>
-        <div class="row">
-          <div class="dot" style="background:#19B8A6"></div>
-          <div class="body">
-            <div class="title">提交季度复盘文档</div>
-            <div class="meta">待办 · 高优先级</div>
-          </div>
-          <div class="time">今天</div>
-        </div>
-        <div class="row">
-          <div class="dot" style="background:#7C6CFF"></div>
-          <div class="body">
-            <div class="title">晚间健身</div>
-            <div class="meta">日程 · 个人</div>
-          </div>
-          <div class="time">19:00</div>
-        </div>
-      </div>
     </div>
 
-    <!-- 底部导航 -->
     <div class="nav">
-      <div class="item active"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/></svg><span class="lab">首页</span></div>
-      <div class="item"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 5h16v11H7l-3 3V5z"/></svg><span class="lab">问答</span></div>
-      <div class="item"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 4h11l3 3v13H5z"/></svg><span class="lab">笔记</span></div>
-      <div class="item"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="5" width="16" height="14" rx="2"/><path d="M8 3v4M16 3v4M4 10h16"/></svg><span class="lab">日程</span></div>
-      <div class="item"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19 12a7 7 0 0 0-.1-1.2l2-1.6-2-3.4-2.4 1a7 7 0 0 0-2-1.2L14 2h-4l-.5 2.6a7 7 0 0 0-2 1.2l-2.4-1-2 3.4 2 1.6A7 7 0 0 0 5 12c0 .4 0 .8.1 1.2l-2 1.6 2 3.4 2.4-1a7 7 0 0 0 2 1.2L10 22h4l.5-2.6a7 7 0 0 0 2-1.2l2.4 1 2-3.4-2-1.6c.1-.4.1-.8.1-1.2z"/></svg><span class="lab">我的</span></div>
+      <div class="item active"><svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/></svg><span class="lab">首页</span></div>
+      <div class="item"><svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 5h16v11H7l-3 3V5z"/></svg><span class="lab">问答</span></div>
+      <div class="item"><svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 4h11l3 3v13H5z"/></svg><span class="lab">笔记</span></div>
+      <div class="item"><svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="5" width="16" height="14" rx="2"/><path d="M8 3v4M16 3v4M4 10h16"/></svg><span class="lab">日程</span></div>
+      <div class="item"><svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19 12a7 7 0 0 0-.1-1.2l2-1.6-2-3.4-2.4 1a7 7 0 0 0-2-1.2L14 2h-4l-.5 2.6a7 7 0 0 0-2 1.2l-2.4-1-2 3.4 2 1.6A7 7 0 0 0 5 12c0 .4 0 .8.1 1.2l-2 1.6 2 3.4 2.4-1a7 7 0 0 0 2 1.2L10 22h4l.5-2.6a7 7 0 0 0 2-1.2l2.4 1 2-3.4-2-1.6c.1-.4.1-.8.1-1.2z"/></svg><span class="lab">我的</span></div>
     </div>
   </div>
 </body>
