@@ -320,19 +320,39 @@ const ChatView = {
 
     const sys = s.systemPrompt;
     const messages = [];
+    // 注入日程与待办上下文：让 AI 能基于用户的真实数据回答"明天安排/待办"等问题
+    const upcomingEvents = Store.events.upcoming(7);
+    const undoneTodos = Store.todos.list('undone').slice(0, 20);
+    const ctxParts = [];
+    if (upcomingEvents.length) {
+      ctxParts.push('【最近 7 天日程】\n' + upcomingEvents.map(e => {
+        const t = e.start.slice(0, 16).replace('T', ' ');
+        return `${t} ${e.title}${e.location ? ' @' + e.location : ''}${e.note ? '（' + e.note + '）' : ''}`;
+      }).join('\n'));
+    }
+    if (undoneTodos.length) {
+      ctxParts.push('【未完成待办】\n' + undoneTodos.map(t => {
+        const pri = t.priority === 2 ? '[高]' : t.priority === 1 ? '[中]' : '[低]';
+        return `${pri} ${t.text}${t.dueDate ? ' 截止' + t.dueDate : ''}`;
+      }).join('\n'));
+    }
+    const userDataCtx = ctxParts.length
+      ? '\n\n以下是该用户本机保存的真实数据。当用户询问安排/日程/待办/笔记时，必须优先基于以下数据回答；若数据中确实没有相关信息，请明确说明"暂无相关记录"，再给一般性建议。\n\n' + ctxParts.join('\n\n')
+      : '';
+
     // 问答模式：根据用户问题检索笔记，注入上下文供 AI 参考回答
     if (s.qaNotes) {
       const qs = chat.messages.filter(m => m.role === 'user').slice(-2).map(m => m.content).join(' ');
       const relNotes = AI.searchNotes(qs, 3);
-      const qaSys = sys + '\n\n你是用户的私人问答助手：请优先基于用户笔记的内容回答，答案准确、简洁、务实；若笔记中没有相关信息，请先明确说明「笔记里没有相关内容」，再给出一般性回答。';
+      const qaSys = sys + '\n\n你是用户的私人问答助手。优先基于用户笔记与日程/待办数据回答，答案准确、简洁、务实。' + userDataCtx;
       if (relNotes.length) {
         const noteCtx = relNotes.map((n, i) => `${i + 1}.【${n.title || '无标题'}】\n${(n.content || '').slice(0, 600)}`).join('\n\n');
-        messages.push({ role: 'system', content: qaSys + '\n\n以下是从用户笔记中检索到的相关资料，回答时请优先参考：\n\n' + noteCtx });
+        messages.push({ role: 'system', content: qaSys + '\n\n【相关笔记】\n' + noteCtx });
       } else {
         messages.push({ role: 'system', content: qaSys });
       }
     } else {
-      messages.push({ role: 'system', content: sys });
+      messages.push({ role: 'system', content: sys + userDataCtx });
     }
     // 截断历史，只取最近 20 条，避免长对话超出 token 限制
     messages.push(...chat.messages.filter(m => m.role === 'user' || m.role === 'assistant')
