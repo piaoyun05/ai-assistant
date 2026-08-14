@@ -22,7 +22,8 @@ const Store = (() => {
         autoTitle: true,   // 根据内容自动生成笔记标题
         autoRefine: true,  // AI 自动整理笔记内容
         autoSync: true,    // 笔记中的日程/待办自动同步到日程模块
-        qaNotes: true      // 问答模式参考笔记内容回答
+        qaNotes: true,     // 问答模式参考笔记内容回答
+        streamMode: false  // 流式响应（打字效果），默认关闭——微信/移动浏览器兼容性最好；开启后部分浏览器可能无响应
       },
       notes: [],
       todos: [],

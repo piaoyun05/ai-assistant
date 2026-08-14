@@ -191,7 +191,8 @@ const SettingsView = {
         <label class="switch-row"><input type="checkbox" id="set-refine" ${s.autoRefine ? 'checked' : ''}><span>停止输入后 AI 自动整理并保存</span></label>
         <label class="switch-row"><input type="checkbox" id="set-sync" ${s.autoSync ? 'checked' : ''}><span>笔记中的日程/待办同步到日程</span></label>
         <label class="switch-row"><input type="checkbox" id="set-qa" ${s.qaNotes ? 'checked' : ''}><span>问答优先参考笔记内容回答</span></label>
-        <small style="color:var(--text-3)">前三项开启后消耗少量 API 额度，可在 AI 设置中随时关闭</small>
+        <label class="switch-row"><input type="checkbox" id="set-stream" ${s.streamMode ? 'checked' : ''}><span>流式响应（打字效果，部分浏览器不支持）</span></label>
+        <small style="color:var(--text-3)">流式默认关闭以保证最大兼容性；在 Chrome/Edge 桌面端可开启获得打字效果</small>
       </div>
       <div style="display:flex;gap:10px">
         <button class="btn btn-outline btn-block" data-c="test">测试连接</button>
@@ -208,7 +209,8 @@ const SettingsView = {
         autoTitle: sheet.root.querySelector('#set-autotitle').checked,
         autoRefine: sheet.root.querySelector('#set-refine').checked,
         autoSync: sheet.root.querySelector('#set-sync').checked,
-        qaNotes: sheet.root.querySelector('#set-qa').checked
+        qaNotes: sheet.root.querySelector('#set-qa').checked,
+        streamMode: sheet.root.querySelector('#set-stream').checked
       });
       Store.save();
       UI.closeSheet();

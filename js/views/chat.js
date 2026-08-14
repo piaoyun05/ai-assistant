@@ -23,6 +23,11 @@ const ChatView = {
 
   renderList() {
     const list = Store.chats.list();
+    const s = Store.settings();
+    // 未配置 API Key 时显示醒目横幅，引导用户先去配置（避免提问后才发现"无响应"）
+    const aiBanner = s.apiKey
+      ? ''
+      : `<div class="ai-status" data-goto="/settings" style="margin-top:10px;cursor:pointer">${icon('alert')}<span>未配置 API Key，AI 无法响应 · 点击前往配置</span></div>`;
     const listHtml = !list.length
       ? `<div class="empty">${icon('chat')}<p>还没有问答记录<br>直接在上方提问，AI 会结合你的笔记回答</p></div>`
       : `<div class="card" style="padding:4px 14px">
@@ -41,6 +46,7 @@ const ChatView = {
       </ul>
     </div>`;
     return `
+      ${aiBanner}
       <div class="ai-entry" style="margin-top:14px">
         <div class="ai-input-row">
           <input id="chat-new-input" class="ai-input" placeholder="直接提问，AI 会结合你的笔记内容回答…" autocomplete="off">
@@ -53,6 +59,8 @@ const ChatView = {
 
   bind(root, rest) {
     if (rest[0]) { this.bindThread(root, rest[0]); return; }
+    // 未配置 Key 横幅的跳转
+    bindGoto(root);
     // 顶部快捷提问（同首页：直接创建问答并跳转自动提问）
     const input = root.querySelector('#chat-new-input');
     const sendBtn = root.querySelector('#chat-new-send');
@@ -289,20 +297,31 @@ const ChatView = {
     App.chatBusy = true;
     const root = document.getElementById('view-root');
     const listEl = root.querySelector('#msg-list');
-    // 追加 AI 占位气泡
+    // 追加 AI 占位气泡（带"正在思考"文字，避免只有 typing-dots 时用户误以为卡死）
     const wrapper = document.createElement('div');
     wrapper.className = 'msg-row ai';
     wrapper.innerHTML = `<div class="msg-avatar ai">AI</div>
-      <div class="msg-bubble"><span class="typing-dots"><span></span><span></span><span></span></span></div>`;
+      <div class="msg-bubble"><span class="typing-dots"><span></span><span></span><span></span></span><span style="margin-left:6px;color:var(--text-3);font-size:13px">正在思考…</span></div>`;
     listEl.appendChild(wrapper);
     wrapper.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     const bubble = wrapper.querySelector('.msg-bubble');
     let full = '';
 
-    const sys = Store.settings().systemPrompt;
+    // 请求前校验 API Key，无 Key 立即明确提示，不发请求（避免用户误以为"AI 在响应"却一直空转）
+    const s = Store.settings();
+    if (!s.apiKey || !s.apiKey.trim()) {
+      full = '⚠️ 尚未配置 DeepSeek API Key，AI 无法响应。\n\n请到「我的 → AI 设置」配置 API Key 后再提问（可在 platform.deepseek.com 申请）';
+      bubble.innerHTML = md(full);
+      App.chatBusy = false;
+      Store.chats.append(chat, 'assistant', full);
+      wrapper.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      return;
+    }
+
+    const sys = s.systemPrompt;
     const messages = [];
     // 问答模式：根据用户问题检索笔记，注入上下文供 AI 参考回答
-    if (Store.settings().qaNotes) {
+    if (s.qaNotes) {
       const qs = chat.messages.filter(m => m.role === 'user').slice(-2).map(m => m.content).join(' ');
       const relNotes = AI.searchNotes(qs, 3);
       const qaSys = sys + '\n\n你是用户的私人问答助手：请优先基于用户笔记的内容回答，答案准确、简洁、务实；若笔记中没有相关信息，请先明确说明「笔记里没有相关内容」，再给出一般性回答。';
@@ -324,55 +343,52 @@ const ChatView = {
         return { role: m.role, content: m.content };
       }).slice(-20));
 
-    let usedFallback = false;
-    try {
-      full = await AI.chat(messages, {
-        onDelta: delta => {
-          full += delta;
-          if (bubble.querySelector('.typing-dots')) bubble.innerHTML = '';
-          bubble.innerHTML = md(full);
-          wrapper.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-        },
-        // V4 thinking 模式：思考阶段只推 reasoning_content，给用户可见进度，避免误以为卡死
-        onReason: () => {
-          if (bubble.querySelector('.typing-dots')) bubble.innerHTML = '';
-          bubble.innerHTML = '<span class="msg-fallback-tip" style="animation:none">🤔 思考中…</span>';
-          wrapper.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-        }
-      });
+    const flatMessages = messages.map(m => ({ role: m.role, content: m.content }));
+    const showErr = (msg) => {
+      full = '⚠️ AI 响应失败：' + (msg || '未知错误') + '\n\n排查建议：\n1. 检查 API Key 是否有效（「我的 → AI 设置」）\n2. 检查网络能否访问 DeepSeek\n3. 在「AI 设置」点「测试连接」验证\n4. 若刚更新过，长按页面强制刷新后重试（清除旧缓存）';
       bubble.innerHTML = md(full);
-    } catch (e) {
-      console.error('[chat] 流式请求失败，尝试非流式回退:', e);
-      // 流式失败常见于微信内置浏览器 / 部分 Android 浏览器对 ReadableStream 兼容性差
-      // 自动回退到非流式 ask，保证用户至少能用
-      try {
-        if (bubble.querySelector('.typing-dots')) bubble.innerHTML = '';
-        bubble.innerHTML = '<span class="msg-fallback-tip">流式连接不可用，已切换为一次性回复</span>';
-        const flatMessages = messages.map(m => ({ role: m.role, content: m.content }));
-        const result = await AI.askWithMessages(flatMessages);
-        full = result || '';
-        usedFallback = true;
-        bubble.innerHTML = md(full || '（无响应）');
-      } catch (e2) {
-        console.error('[chat] 非流式回退也失败:', e2);
-        bubble.innerHTML = md('⚠️ ' + (e2.message || e.message));
-        full = '⚠️ ' + (e2.message || e.message);
+    };
+    const runNonStream = async () => {
+      if (bubble.querySelector('.typing-dots')) bubble.innerHTML = '';
+      bubble.innerHTML = '<span class="msg-fallback-tip">正在等待 AI 响应…</span>';
+      const result = await AI.askWithMessages(flatMessages);
+      full = result || '';
+      bubble.innerHTML = md(full || '（无响应）');
+    };
+
+    try {
+      if (s.streamMode === true) {
+        // 流式响应（开启打字效果，部分浏览器不支持会自动回退到非流式）
+        try {
+          full = await AI.chat(messages, {
+            onDelta: delta => {
+              full += delta;
+              if (bubble.querySelector('.typing-dots')) bubble.innerHTML = '';
+              bubble.innerHTML = md(full);
+              wrapper.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            },
+            onReason: () => {
+              if (bubble.querySelector('.typing-dots')) bubble.innerHTML = '';
+              bubble.innerHTML = '<span class="msg-fallback-tip" style="animation:none">🤔 思考中…</span>';
+              wrapper.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            }
+          });
+          bubble.innerHTML = md(full);
+          if (!full) { console.warn('[chat] 流式完成但内容为空，回退非流式'); await runNonStream(); }
+        } catch (e) {
+          console.error('[chat] 流式失败，回退非流式:', e);
+          if (bubble.querySelector('.typing-dots')) bubble.innerHTML = '';
+          bubble.innerHTML = '<span class="msg-fallback-tip">流式不可用，切换为一次性回复…</span>';
+          try { await runNonStream(); }
+          catch (e2) { showErr((e2 && e2.message) || e.message); }
+        }
+      } else {
+        // 默认非流式（兼容性最好，微信/移动浏览器首选）
+        try { await runNonStream(); }
+        catch (e) { showErr(e && e.message); }
       }
     } finally {
       App.chatBusy = false;
-    }
-    // 检测流式完成但没收到任何内容（API 返回 200 但流为空，可能是网络代理把流截断了）
-    if (!usedFallback && !full) {
-      bubble.innerHTML = md('⚠️ 未收到 AI 响应。可能原因：①网络/代理把流截断；②API Key 无余额；③接口地址错误。已尝试非流式重试…');
-      try {
-        const flatMessages = messages.map(m => ({ role: m.role, content: m.content }));
-        const result = await AI.askWithMessages(flatMessages);
-        full = result || '';
-        bubble.innerHTML = md(full || '（无响应）');
-      } catch (e2) {
-        bubble.innerHTML = md('⚠️ 重试失败：' + (e2.message || '未知错误'));
-        full = '⚠️ 重试失败：' + (e2.message || '未知错误');
-      }
     }
     Store.chats.append(chat, 'assistant', full);
     wrapper.scrollIntoView({ behavior: 'smooth', block: 'nearest' });

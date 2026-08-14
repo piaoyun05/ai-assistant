@@ -70,6 +70,11 @@ check('Store 默认状态创建', () => {
   if (!s.notes || !s.todos || !s.events || !s.chats) throw new Error('state 结构不完整');
 });
 
+check('默认 streamMode=false（非流式，最大兼容性）', () => {
+  Store.reset();
+  if (Store.settings().streamMode !== false) throw new Error('streamMode 默认应为 false（非流式）');
+});
+
 check('笔记 CRUD + 搜索', () => {
   Store.reset();
   const n = Store.notes.create({ title: '会议记录', content: '讨论 Q3 计划与预算', tags: ['工作'] });
