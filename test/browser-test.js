@@ -184,6 +184,15 @@ function fetchText(url) {
     return chat.messages.some(m => m.role === 'user' && m.content === '笔记里写过什么？');
   })()`);
   check('笔记问答消息已写入', qaInjected, '');
+  // 等待流式失败 → 非流式回退 → 最终 bubble 显示错误消息（jsdom 无 fetch）
+  await new Promise(r => setTimeout(r, 800));
+  const finalBubble = window.eval(`(() => {
+    const chat = Store.chats.list().slice(-1)[0];
+    if (!chat) return '';
+    const last = chat.messages[chat.messages.length - 1];
+    return last && last.role === 'assistant' ? last.content : '';
+  })()`);
+  check('AI 失败回退后写入 assistant 消息', finalBubble.length > 0, finalBubble.slice(0, 40));
 
   // 返回首页
   window.location.hash = '#/';

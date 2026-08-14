@@ -303,6 +303,8 @@ svg { width: 22px; height: 22px; display: block; }
 }
 .msg-bubble code { background: rgba(79,70,229,.08); color: var(--primary-dark); padding: 1px 5px; border-radius: 5px; font-size: 13px; }
 .msg-bubble pre code { background: none; color: inherit; padding: 0; }
+.msg-fallback-tip { display: inline-block; font-size: 12px; color: var(--text-3); padding: 4px 0; animation: fb-blink 1.2s ease-in-out infinite; }
+@keyframes fb-blink { 0%,100%{opacity:.55} 50%{opacity:1} }
 .msg-ctx-chip {
   display: inline-flex; align-items: center; gap: 5px; max-width: 100%;
   background: var(--primary-light); color: var(--primary); font-size: 12px;

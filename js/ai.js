@@ -39,8 +39,9 @@ const AI = (() => {
     if (maxTokens) body.max_tokens = maxTokens;
 
     // 超时保护：避免请求挂起导致界面一直显示「处理中」
-    // 直连 DeepSeek 在网络不稳时 fetch 可能无限 pending，这里统一 90 秒中止
-    const TIMEOUT_MS = 90e3;
+    // 直连 DeepSeek 在网络不稳时 fetch 可能无限 pending，聊天场景 30 秒足够，
+    // 超时即触发回退/报错，让用户能快速感知问题
+    const TIMEOUT_MS = 30e3;
     const ctrl = new AbortController();
     const timer = setTimeout(() => ctrl.abort(), TIMEOUT_MS);
     const cleanup = () => clearTimeout(timer);
@@ -99,7 +100,7 @@ const AI = (() => {
       return full;
     } catch (e) {
       if (e.name === 'AbortError') {
-        throw new Error('请求超时（' + TIMEOUT_MS / 1000 + ' 秒），请检查网络后重试。若使用国内网络直连 DeepSeek 不稳定，可在「我的 → AI 设置」更换接口地址或配置代理');
+        throw new Error('请求超时（' + TIMEOUT_MS / 1000 + ' 秒未响应）。请检查：①网络能否访问 DeepSeek；②API Key 是否有效；③若在国内网络不稳，可在「我的 → AI 设置」配置代理或自定义接口地址');
       }
       throw e;
     } finally {
@@ -124,6 +125,11 @@ const AI = (() => {
   /** 一次性问答（非流式） */
   async function ask(system, user, opts = {}) {
     const messages = buildMessages(system, user);
+    return chat(messages, Object.assign({ stream: false }, opts));
+  }
+
+  /** 给完整 messages 列表的非流式请求（用于流式失败回退），不依赖 system/user 分开构造 */
+  async function askWithMessages(messages, opts = {}) {
     return chat(messages, Object.assign({ stream: false }, opts));
   }
 
@@ -287,5 +293,5 @@ const AI = (() => {
     return scored.slice(0, limit).map(x => x.n);
   }
 
-  return { chat, ask, noteAction, extractTasks, weekReview, summarizeNotes, summarizeMessages, genTitle, refineNote, hash, searchNotes, endpoint, mapError };
+  return { chat, ask, askWithMessages, noteAction, extractTasks, weekReview, summarizeNotes, summarizeMessages, genTitle, refineNote, hash, searchNotes, endpoint, mapError };
 })();

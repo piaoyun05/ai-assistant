@@ -324,6 +324,7 @@ const ChatView = {
         return { role: m.role, content: m.content };
       }).slice(-20));
 
+    let usedFallback = false;
     try {
       full = await AI.chat(messages, {
         onDelta: delta => {
@@ -335,11 +336,37 @@ const ChatView = {
       });
       bubble.innerHTML = md(full);
     } catch (e) {
-      console.error(e);
-      bubble.innerHTML = md('⚠️ ' + e.message);
-      full = '⚠️ ' + e.message;
+      console.error('[chat] 流式请求失败，尝试非流式回退:', e);
+      // 流式失败常见于微信内置浏览器 / 部分 Android 浏览器对 ReadableStream 兼容性差
+      // 自动回退到非流式 ask，保证用户至少能用
+      try {
+        if (bubble.querySelector('.typing-dots')) bubble.innerHTML = '';
+        bubble.innerHTML = '<span class="msg-fallback-tip">流式连接不可用，已切换为一次性回复</span>';
+        const flatMessages = messages.map(m => ({ role: m.role, content: m.content }));
+        const result = await AI.askWithMessages(flatMessages);
+        full = result || '';
+        usedFallback = true;
+        bubble.innerHTML = md(full || '（无响应）');
+      } catch (e2) {
+        console.error('[chat] 非流式回退也失败:', e2);
+        bubble.innerHTML = md('⚠️ ' + (e2.message || e.message));
+        full = '⚠️ ' + (e2.message || e.message);
+      }
     } finally {
       App.chatBusy = false;
+    }
+    // 检测流式完成但没收到任何内容（API 返回 200 但流为空，可能是网络代理把流截断了）
+    if (!usedFallback && !full) {
+      bubble.innerHTML = md('⚠️ 未收到 AI 响应。可能原因：①网络/代理把流截断；②API Key 无余额；③接口地址错误。已尝试非流式重试…');
+      try {
+        const flatMessages = messages.map(m => ({ role: m.role, content: m.content }));
+        const result = await AI.askWithMessages(flatMessages);
+        full = result || '';
+        bubble.innerHTML = md(full || '（无响应）');
+      } catch (e2) {
+        bubble.innerHTML = md('⚠️ 重试失败：' + (e2.message || '未知错误'));
+        full = '⚠️ 重试失败：' + (e2.message || '未知错误');
+      }
     }
     Store.chats.append(chat, 'assistant', full);
     wrapper.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
