@@ -103,6 +103,16 @@ function fetchText(url) {
   const autoTitle = window.eval('Store.notes.get(window.__autoTitleNote).title');
   check('笔记自动生成标题', autoTitle.length > 0, autoTitle);
 
+  // 标签添加后路由正确（修复 '/' + id 致「笔记不存在」）
+  const tagInput = doc.querySelector('#tag-add');
+  if (tagInput) {
+    tagInput.value = '测试标签';
+    tagInput.dispatchEvent(new window.KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+    await new Promise(r => setTimeout(r, 300));
+  }
+  const tagEmpty = doc.querySelector('.empty');
+  check('标签添加后不显示笔记不存在', !tagEmpty || !tagEmpty.textContent.includes('不存在'), tagEmpty ? tagEmpty.textContent : '');
+
   // 日程页
   window.location.hash = '#/schedule';
   await new Promise(r => setTimeout(r, 200));
@@ -110,6 +120,13 @@ function fetchText(url) {
   await new Promise(r => setTimeout(r, 200));
   check('日程页渲染（月历）', !!doc.querySelector('.cal-grid'), '');
   check('段切换按钮', doc.querySelectorAll('.seg button').length === 2, String(doc.querySelectorAll('.seg button').length));
+  // 日历切月不崩溃（修复 App.calMonth 未初始化致 split 报错）
+  doc.querySelector('[data-cal="prev"]').click();
+  await new Promise(r => setTimeout(r, 200));
+  check('日历切月不崩溃', !!doc.querySelector('.cal-grid'), '');
+  doc.querySelector('[data-cal="today"]').click();
+  await new Promise(r => setTimeout(r, 200));
+  check('日历回到今天', !!doc.querySelector('.cal-day.today'), '');
 
   // 待办新建
   doc.querySelector('[data-tab="todos"]').click();
@@ -126,6 +143,11 @@ function fetchText(url) {
   window.location.hash = '#/settings';
   await new Promise(r => setTimeout(r, 200));
   check('设置页渲染', !!doc.querySelector('[data-act="export"]'), '');
+
+  // 导出备份脱敏 apiKey
+  window.eval(`Store.settings().apiKey = 'sk-secret-123'; Store.save();`);
+  const maskedKey = window.eval(`(() => { const s = JSON.parse(Store.exportData()); if (s.settings) s.settings.apiKey = ''; return s.settings.apiKey; })()`);
+  check('导出备份脱敏 apiKey', maskedKey === '', maskedKey);
 
   // AI 设置弹层
   doc.querySelector('[data-act="ai-set"]').click();

@@ -70,6 +70,8 @@ const OcrView = {
       const file = input.files[0];
       input.value = '';
       if (!file) return;
+      // 释放上一次的 blob URL，避免内存泄漏
+      if (self.state.imgUrl) { try { URL.revokeObjectURL(self.state.imgUrl); } catch (e) {} }
       self.state.file = file;
       self.state.imgUrl = URL.createObjectURL(file);
       self.state.text = '';

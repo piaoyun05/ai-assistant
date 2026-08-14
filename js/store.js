@@ -54,7 +54,7 @@ const Store = (() => {
     try { localStorage.setItem(KEY, JSON.stringify(state)); }
     catch (e) {
       console.error('保存本地数据失败', e);
-      toast('本地存储空间不足，请清理部分数据');
+      if (typeof UI !== 'undefined' && UI.toast) UI.toast('本地存储空间不足，请清理部分数据');
     }
   }
 
@@ -75,8 +75,15 @@ const Store = (() => {
   function importData(json) {
     const parsed = JSON.parse(json);
     if (!parsed || typeof parsed !== 'object') throw new Error('数据格式不正确');
-    state = Object.assign(defaultState(), parsed);
-    state.settings = Object.assign(defaultState().settings, parsed.settings || {});
+    const d = defaultState();
+    state = {
+      settings: Object.assign(d.settings, parsed.settings || {}),
+      notes: Array.isArray(parsed.notes) ? parsed.notes : [],
+      todos: Array.isArray(parsed.todos) ? parsed.todos : [],
+      events: Array.isArray(parsed.events) ? parsed.events : [],
+      chats: Array.isArray(parsed.chats) ? parsed.chats : [],
+      extraTags: Array.isArray(parsed.extraTags) ? parsed.extraTags : d.extraTags
+    };
     save();
   }
 

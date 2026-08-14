@@ -252,6 +252,7 @@ const ChatView = {
 
   /* ---------- 发送与流式 ---------- */
   sendMessage(id, text, ctx) {
+    if (App.chatBusy) { UI.toast('AI 正在回复，请稍候'); return; }
     const chat = Store.chats.get(id);
     Store.chats.append(chat, 'user', text, ctx);
     ViewManager.render(this, ['/' + id]);
@@ -259,6 +260,7 @@ const ChatView = {
   },
 
   async streamAssistant(id, chat) {
+    App.chatBusy = true;
     const root = document.getElementById('view-root');
     const listEl = root.querySelector('#msg-list');
     // 追加 AI 占位气泡
@@ -287,13 +289,14 @@ const ChatView = {
     } else {
       messages.push({ role: 'system', content: sys });
     }
+    // 截断历史，只取最近 20 条，避免长对话超出 token 限制
     messages.push(...chat.messages.filter(m => m.role === 'user' || m.role === 'assistant')
       .map(m => {
         if (m.ctx && m.role === 'user') {
           return { role: 'user', content: m.content + '\n\n[附：图片OCR识别文本]\n' + m.ctx.text };
         }
         return { role: m.role, content: m.content };
-      }));
+      }).slice(-20));
 
     try {
       full = await AI.chat(messages, {
@@ -309,6 +312,8 @@ const ChatView = {
       console.error(e);
       bubble.innerHTML = md('⚠️ ' + e.message);
       full = '⚠️ ' + e.message;
+    } finally {
+      App.chatBusy = false;
     }
     Store.chats.append(chat, 'assistant', full);
     wrapper.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
@@ -316,6 +321,7 @@ const ChatView = {
 
   /** 重新生成最后一条 AI 回复 */
   async regenerate(id) {
+    if (App.chatBusy) { UI.toast('AI 正在回复，请稍候'); return; }
     const chat = Store.chats.get(id);
     if (chat.messages.length >= 2 && chat.messages[chat.messages.length - 1].role === 'assistant') {
       chat.messages.pop();

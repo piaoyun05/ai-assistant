@@ -89,11 +89,12 @@ const NotesView = {
     ]);
     if (!act) return;
     const titleEl = document.querySelector('#note-title');
+    const contentEl = document.querySelector('#note-content');
     if (act.label === 'AI 操作') { this.openAIMenu(id); }
     else if (act.label === '收藏' || act.label === '取消收藏') { Store.notes.update(id, { fav: !n.fav }); UI.toast('已更新'); }
     else if (act.label === '归档' || act.label === '取消归档') { Store.notes.update(id, { archived: !n.archived }); UI.toast('已更新'); Router.back(); }
     else if (act.label === '保存为新笔记') {
-      const nn = Store.notes.create({ title: titleEl ? titleEl.value : n.title, content: n.content, tags: n.tags });
+      const nn = Store.notes.create({ title: titleEl ? titleEl.value : n.title, content: contentEl ? contentEl.value : n.content, tags: n.tags });
       UI.toast('已保存为新笔记'); Router.navigate('/note/' + nn.id);
     } else if (act.label === '删除') {
       const ok = await UI.confirm('删除这条笔记？此操作不可恢复。', '删除');
@@ -190,11 +191,12 @@ const NotesView = {
     const root = document.getElementById('view-root');
     root.querySelectorAll('.note-card').forEach(card => {
       card.style.cursor = 'pointer';
-      card.addEventListener('click', () => {
+      card.addEventListener('click', e => {
+        e.stopImmediatePropagation(); // 阻止 bind 阶段绑定的"打开笔记"事件
         if (selected.has(card.dataset.id)) selected.delete(card.dataset.id);
         else selected.add(card.dataset.id);
         renderList();
-      });
+      }, true);
     });
 
     const s = UI.sheet(`
@@ -327,8 +329,7 @@ const NotesView = {
         if (!n.tags.includes(v)) n.tags.push(v);
         Store.save();
         tagAdd.value = '';
-        this.bindEditor(root, id);
-        ViewManager.render(this, ['/' + id]);
+        ViewManager.render(this, [id]);
       }
     });
 
@@ -454,6 +455,12 @@ const NotesView = {
   },
 
   async runNoteAI(id, actionKey) {
+    // 在编辑器页面时先同步保存当前输入，避免 AI 用到旧内容
+    const titleEl = document.querySelector('#note-title');
+    const contentEl = document.querySelector('#note-content');
+    if (titleEl && contentEl && Store.notes.get(id)) {
+      Store.notes.update(id, { title: titleEl.value, content: contentEl.value });
+    }
     const n = Store.notes.get(id);
     const content = n.content || '';
     if (!content.trim()) { UI.toast('笔记内容为空'); return; }

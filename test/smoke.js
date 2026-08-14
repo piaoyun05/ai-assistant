@@ -128,6 +128,21 @@ check('导出/导入备份', () => {
   if (Store.notes.all().length !== before) throw new Error('导入后笔记数量不符');
 });
 
+check('importData 校验数组字段（防御非数组）', () => {
+  Store.reset();
+  Store.importData(JSON.stringify({ notes: 'not-array', todos: 123, events: null, chats: {} }));
+  if (!Array.isArray(Store.notes.all())) throw new Error('notes 未归一为数组');
+  if (!Array.isArray(Store.todos.all())) throw new Error('todos 未归一为数组');
+  if (!Array.isArray(Store.events.all())) throw new Error('events 未归一为数组');
+  if (!Array.isArray(Store.chats.all())) throw new Error('chats 未归一为数组');
+});
+
+check('md 列表包裹 ul', () => {
+  const html = md('- 项目一\\n- 项目二');
+  if (!html.includes('<ul>')) throw new Error('列表未包裹 ul');
+  if (!html.includes('<li>项目一</li>')) throw new Error('列表项未渲染');
+});
+
 console.log('\\n结果：' + pass + ' 通过，' + fail + ' 失败');
 if (fail) process.exit(1);
 `;

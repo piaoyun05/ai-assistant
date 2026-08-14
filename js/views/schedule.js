@@ -63,7 +63,8 @@ const ScheduleView = {
   renderCalendar() {
     const now = new Date();
     const sel = App.calDate || now.toISODate();
-    const viewMonth = App.calMonth || (sel + '-01');
+    const viewMonth = App.calMonth || (sel.slice(0, 7) + '-01');
+    App.calMonth = viewMonth; // 标准化，供 bindCalendar 使用
 
     const [y, m] = viewMonth.split('-').map(Number);
     const first = new Date(y, m - 1, 1);
@@ -195,21 +196,22 @@ const ScheduleView = {
   },
 
   bindCalendar(root) {
-    // 月切换
+    // 月切换（兜底：App.calMonth 未初始化时用当前月）
+    const monthBase = () => App.calMonth || ((App.calDate || new Date().toISODate()).slice(0, 7) + '-01');
     root.querySelector('[data-cal="prev"]').addEventListener('click', () => {
-      const [y, m] = App.calMonth.split('-').map(Number);
-      App.calMonth = new Date(y, m - 2, 1).toISODate() + '-01';
+      const [y, m] = monthBase().split('-').map(Number);
+      App.calMonth = new Date(y, m - 2, 1).toISODate();
       ViewManager.render(this, []);
     });
     root.querySelector('[data-cal="next"]').addEventListener('click', () => {
-      const [y, m] = App.calMonth.split('-').map(Number);
-      App.calMonth = new Date(y, m, 1).toISODate() + '-01';
+      const [y, m] = monthBase().split('-').map(Number);
+      App.calMonth = new Date(y, m, 1).toISODate();
       ViewManager.render(this, []);
     });
     root.querySelector('[data-cal="today"]').addEventListener('click', () => {
       const now = new Date();
       App.calDate = now.toISODate();
-      App.calMonth = now.toISODate() + '-01';
+      App.calMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISODate();
       ViewManager.render(this, []);
     });
 
@@ -285,7 +287,7 @@ const ScheduleView = {
 
   openEventEditor(ev) {
     const e = ev || {};
-    const start = e.start ? e.start.slice(0, 16) : (App.calDate || new Date().toISODate()) + 'T' + new Date().toTimeString().slice(0, 5);
+    const start = e.start ? e.start.slice(0, 16) : (App.calDate || new Date().toISODate()) + 'T' + hhmm(new Date());
     const end = e.end ? e.end.slice(0, 16) : '';
     const s = UI.sheet(`
       <div class="sheet-title">${ev ? '编辑日程' : '新建日程'}</div>

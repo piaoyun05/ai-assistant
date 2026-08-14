@@ -73,16 +73,18 @@ const SettingsView = {
     // AI 设置
     root.querySelector('[data-act="ai-set"]').addEventListener('click', () => this.openAISettings());
 
-    // 备份导出
+    // 备份导出（apiKey 脱敏，避免备份文件外泄密钥）
     root.querySelector('[data-act="export"]').addEventListener('click', () => {
-      const data = Store.exportData();
+      const state = JSON.parse(Store.exportData());
+      if (state.settings) state.settings.apiKey = '';
+      const data = JSON.stringify(state, null, 2);
       const blob = new Blob([data], { type: 'application/json' });
       const a = document.createElement('a');
       a.href = URL.createObjectURL(blob);
       a.download = 'pocket-ai-backup-' + new Date().toISODate() + '.json';
       a.click();
       URL.revokeObjectURL(a.href);
-      UI.toast('备份已导出');
+      UI.toast('备份已导出（API Key 已脱敏，恢复后需重新填写）');
     });
 
     // 导入

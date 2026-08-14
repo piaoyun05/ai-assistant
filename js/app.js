@@ -116,10 +116,10 @@ function md(text) {
   s = s.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
   // 行内链接
   s = s.replace(/\[([^\]]+)\]\((https?:[^)\s]+)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>');
-  // 段落
+  // 段落（连续 <li> 包裹 <ul>）
   s = s.split(/\n{2,}/).map(p => {
-    if (/^\s*<(ul|ol|li|h1|h2|h3|pre|blockquote)/.test(p)) return p;
-    if (/(?:<li>.*<\/li>\s*)+/.test(p) || /(?:<h[1-3]>|<pre>|<blockquote>)/.test(p)) return p;
+    if (/^\s*<(ul|ol|h1|h2|h3|pre|blockquote)/.test(p)) return p;
+    if (/(?:<li>.*<\/li>\s*)+/.test(p)) return '<ul>' + p + '</ul>';
     return `<p>${p.replace(/\n/g, '<br>')}</p>`;
   }).join('');
   return s;
