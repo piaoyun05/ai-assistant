@@ -32,6 +32,10 @@ function fetchText(url) {
   const { window } = dom;
   const doc = window.document;
 
+  // jsdom 未实现 scrollIntoView/scrollTo，注入 polyfill 避免流式问答时崩溃
+  window.Element.prototype.scrollIntoView = function () {};
+  window.Element.prototype.scrollTo = function () {};
+
   // 手动注入本地脚本（script 元素方式，保留 const 全局词法绑定）
   for (const f of SCRIPT_ORDER) {
     try {
@@ -164,6 +168,23 @@ function fetchText(url) {
   check('底部导航跳转对话页', window.location.hash === '#/chat', window.location.hash);
   check('对话 tab 高亮', doc.querySelector('.nav-item[data-route="/chat"]').classList.contains('active'), '');
 
+  // 问答列表页输入窗口（与首页一致的快捷提问）
+  check('问答列表页快捷提问输入框', !!doc.querySelector('#chat-new-input'), '');
+  check('问答列表页发送按钮', !!doc.querySelector('#chat-new-send'), '');
+  const chatInput = doc.querySelector('#chat-new-input');
+  chatInput.value = '笔记里写过什么？';
+  chatInput.dispatchEvent(new window.KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+  await new Promise(r => setTimeout(r, 300));
+  check('快捷提问跳转会话', /^#\/chat\/.+/.test(window.location.hash), window.location.hash);
+  check('提问内容已入会话', !!doc.querySelector('#chat-input'), '');
+  // 会话线程中注入笔记检索逻辑（qaNotes 默认开启）
+  const qaInjected = window.eval(`(() => {
+    const chat = Store.chats.list().slice(-1)[0];
+    if (!chat || !chat.messages.length) return false;
+    return chat.messages.some(m => m.role === 'user' && m.content === '笔记里写过什么？');
+  })()`);
+  check('笔记问答消息已写入', qaInjected, '');
+
   // 返回首页
   window.location.hash = '#/';
   await new Promise(r => setTimeout(r, 200));
@@ -184,7 +205,7 @@ function fetchText(url) {
   const cssText = await fetchText(BASE + 'css/app.css');
   check('CSS 含 [hidden] 规则', /\[hidden\]\s*{[^}]*display:\s*none/i.test(cssText), '');
 
-  const errBlocking = errors.filter(e => !/scrollTo/.test(e));
+  const errBlocking = errors.filter(e => !/scroll(To|IntoView)/.test(e));
   check('无运行时错误', errBlocking.length === 0, errBlocking.slice(0, 6).join(' | '));
 
   console.log('\n结果：' + pass + ' 通过，' + fail + ' 失败');

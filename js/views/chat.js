@@ -23,10 +23,9 @@ const ChatView = {
 
   renderList() {
     const list = Store.chats.list();
-    if (!list.length) {
-      return `<div class="empty">${icon('chat')}<p>还没有问答记录<br>点右上角「+」新建，或从首页输入框直接提问</p></div>`;
-    }
-    return `<div class="card" style="padding:4px 14px">
+    const listHtml = !list.length
+      ? `<div class="empty">${icon('chat')}<p>还没有问答记录<br>直接在上方提问，AI 会结合你的笔记回答</p></div>`
+      : `<div class="card" style="padding:4px 14px">
       <ul class="list">
         ${list.map(c => {
           const last = c.messages[c.messages.length - 1];
@@ -41,10 +40,37 @@ const ChatView = {
         }).join('')}
       </ul>
     </div>`;
+    return `
+      <div class="ai-entry" style="margin-top:14px">
+        <div class="ai-input-row">
+          <input id="chat-new-input" class="ai-input" placeholder="直接提问，AI 会结合你的笔记内容回答…" autocomplete="off">
+          <button id="chat-new-send" class="ai-send" aria-label="发送">${icon('send')}</button>
+        </div>
+      </div>
+      ${listHtml}
+    `;
   },
 
   bind(root, rest) {
     if (rest[0]) { this.bindThread(root, rest[0]); return; }
+    // 顶部快捷提问（同首页：直接创建问答并跳转自动提问）
+    const input = root.querySelector('#chat-new-input');
+    const sendBtn = root.querySelector('#chat-new-send');
+    const doAsk = () => {
+      const text = input.value.trim();
+      if (!text) { UI.toast('请输入内容'); return; }
+      input.value = '';
+      const chat = Store.chats.create();
+      Store.chats.append(chat, 'user', text);
+      App.autoAsk = chat.id;
+      Router.navigate('/chat/' + chat.id);
+    };
+    if (input && sendBtn) {
+      sendBtn.addEventListener('click', doAsk);
+      input.addEventListener('keydown', e => {
+        if (e.key === 'Enter' && !e.isComposing) { e.preventDefault(); doAsk(); }
+      });
+    }
     // 列表
     root.querySelectorAll('[data-action="open"]').forEach(li => {
       li.addEventListener('click', () => Router.navigate('/chat/' + li.dataset.id));
@@ -81,7 +107,7 @@ const ChatView = {
       <div id="msg-list">${messagesHtml}</div>
       <div class="chat-input-bar">
         <div id="chat-ctx-row" class="chat-ctx-row" ${ctx ? '' : 'style="display:none"'}>
-          <span class="msg-ctx-chip" style="margin-bottom:0;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${icon('scan')} 已附加 OCR 识别文本：${esc(ctx.text.slice(0, 20))}…</span>
+          <span class="msg-ctx-chip" style="margin-bottom:0;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${icon('scan')} 已附加 OCR 识别文本：${esc(ctx && ctx.text ? ctx.text.slice(0, 20) : '')}…</span>
           <button class="icon-btn" style="width:26px;height:26px;flex-shrink:0" data-action="clear-ctx" aria-label="移除">${icon('close')}</button>
         </div>
         <div class="chat-input-row">
