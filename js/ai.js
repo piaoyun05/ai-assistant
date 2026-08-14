@@ -26,17 +26,25 @@ const AI = (() => {
    */
   async function chat(messages, opts = {}) {
     const s = Store.settings();
-    const { stream = true, onDelta = null, temperature = 0.7, maxTokens = null, jsonMode = false, signal = null } = opts;
+    const { stream = true, onDelta = null, onReason = null, temperature = 0.7, maxTokens = null, jsonMode = false, signal = null, thinking = null } = opts;
     const useStream = stream && onDelta;
 
+    const modelName = String(s.model || '').trim();
     const body = {
-      model: s.model,
+      model: modelName,
       messages,
       temperature,
       stream: useStream
     };
     if (jsonMode) { body.response_format = { type: 'json_object' }; body.stream = false; }
     if (maxTokens) body.max_tokens = maxTokens;
+    // V4 系列默认开启深度思考（thinking），思考阶段流式只推送 reasoning_content 不推送 content，
+    // 会导致聊天界面长时间"空转无响应"。聊天/笔记场景默认关闭 thinking 保证快速出字；
+    // 显式传 thinking:'enabled' 时开启（如需要深度推理的场景）。
+    if (/v4/i.test(modelName)) {
+      if (thinking === 'enabled') body.thinking = { type: 'enabled' };
+      else body.thinking = { type: 'disabled' };
+    }
 
     // 超时保护：避免请求挂起导致界面一直显示「处理中」
     // 直连 DeepSeek 在网络不稳时 fetch 可能无限 pending，聊天场景 30 秒足够，
@@ -89,8 +97,12 @@ const AI = (() => {
               if (payload === '[DONE]') return;
               try {
                 const json = JSON.parse(payload);
-                const delta = json.choices?.[0]?.delta?.content;
-                if (delta) { full += delta; onDelta(delta); }
+                const d = json.choices?.[0]?.delta;
+                // V4 thinking 模式：先推 reasoning_content（思考过程），再推 content（正式回答）
+                const reason = d?.reasoning_content;
+                const text = d?.content;
+                if (text) { full += text; onDelta(text); }
+                else if (reason && onReason) onReason(reason);
               } catch (e) { /* 忽略解析失败的行 */ }
             }
           }

@@ -194,6 +194,20 @@ function fetchText(url) {
   })()`);
   check('AI 失败回退后写入 assistant 消息', finalBubble.length > 0, finalBubble.slice(0, 40));
 
+  // 会话页内直接发送消息（回归：ViewManager.render 曾用 ['/'+id] 导致渲染"问答不存在"且后续崩溃）
+  const threadInput = doc.querySelector('#chat-input');
+  threadInput.value = '会话页内再问一条';
+  threadInput.dispatchEvent(new window.KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+  await new Promise(r => setTimeout(r, 300));
+  check('会话页发送消息不显示"问答不存在"', !doc.querySelector('#view-root').textContent.includes('问答不存在'), doc.querySelector('#view-root').textContent.slice(0, 20));
+  check('会话页消息列表仍存在', !!doc.querySelector('#msg-list'), '');
+  const sentOk = window.eval(`(() => {
+    const chat = Store.chats.list().slice(-1)[0];
+    if (!chat) return false;
+    return chat.messages.some(m => m.role === 'user' && m.content === '会话页内再问一条');
+  })()`);
+  check('会话页发送的消息已写入', sentOk, '');
+
   // 返回首页
   window.location.hash = '#/';
   await new Promise(r => setTimeout(r, 200));

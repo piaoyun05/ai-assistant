@@ -228,7 +228,7 @@ const ChatView = {
         if (!text) { UI.toast('未识别到文字'); return; }
         App.chatCtx = { type: 'ocr', text };
         UI.toast('已附加识别文本');
-        ViewManager.render(this, ['/' + id]);
+        ViewManager.render(this, [id]);
       } catch (e) {
         UI.closeSheet();
         UI.toast(e.message);
@@ -236,7 +236,7 @@ const ChatView = {
     });
     root.querySelector('[data-action="clear-ctx"]').addEventListener('click', () => {
       App.chatCtx = null;
-      ViewManager.render(this, ['/' + id]);
+      ViewManager.render(this, [id]);
     });
 
     // 语音
@@ -281,7 +281,7 @@ const ChatView = {
     if (App.chatBusy) { UI.toast('AI 正在回复，请稍候'); return; }
     const chat = Store.chats.get(id);
     Store.chats.append(chat, 'user', text, ctx);
-    ViewManager.render(this, ['/' + id]);
+    ViewManager.render(this, [id]);
     this.streamAssistant(id, chat);
   },
 
@@ -332,6 +332,12 @@ const ChatView = {
           if (bubble.querySelector('.typing-dots')) bubble.innerHTML = '';
           bubble.innerHTML = md(full);
           wrapper.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        },
+        // V4 thinking 模式：思考阶段只推 reasoning_content，给用户可见进度，避免误以为卡死
+        onReason: () => {
+          if (bubble.querySelector('.typing-dots')) bubble.innerHTML = '';
+          bubble.innerHTML = '<span class="msg-fallback-tip" style="animation:none">🤔 思考中…</span>';
+          wrapper.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
         }
       });
       bubble.innerHTML = md(full);
@@ -380,7 +386,7 @@ const ChatView = {
       chat.messages.pop();
       Store.save();
     }
-    ViewManager.render(this, ['/' + id]);
+    ViewManager.render(this, [id]);
     this.streamAssistant(id, chat);
   },
 
@@ -392,7 +398,7 @@ const ChatView = {
     try {
       const result = await AI.summarizeMessages(chat.messages);
       Store.chats.append(chat, 'assistant', `## ${cmd}\n\n` + result);
-      ViewManager.render(this, ['/' + id]);
+      ViewManager.render(this, [id]);
     } catch (e) {
       UI.toast(e.message);
     } finally {

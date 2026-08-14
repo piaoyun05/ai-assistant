@@ -163,7 +163,7 @@ const SettingsView = {
 
   openAISettings() {
     const s = Store.settings();
-    const models = ['deepseek-v4-flash', 'deepseek-v4-pro', 'deepseek-chat', 'deepseek-reasoner'];
+    const models = ['deepseek-v4-flash', 'deepseek-v4-pro'];
     const sheet = UI.sheet(`
       <div class="sheet-title">AI 设置</div>
       <div class="field">
@@ -175,7 +175,7 @@ const SettingsView = {
         <select class="select" id="set-model">
           ${models.map(m => `<option value="${m}" ${s.model === m ? 'selected' : ''}>${m}${m === 'deepseek-v4-flash' ? '（推荐·快）' : ''}${m === 'deepseek-v4-pro' ? '（更强·贵）' : ''}</option>`).join('')}
         </select>
-        <small style="color:var(--text-3)">deepseek-chat / deepseek-reasoner 为旧版别名，将于 2026-07 弃用</small>
+        <small style="color:var(--text-3)">v4-flash 适合日常问答（快），v4-pro 适合复杂推理（更强·更贵）</small>
       </div>
       <div class="field">
         <label>接口地址（可选）</label>

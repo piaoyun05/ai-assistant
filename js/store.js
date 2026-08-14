@@ -42,6 +42,10 @@ const Store = (() => {
         const parsed = JSON.parse(raw);
         state = Object.assign(defaultState(), parsed);
         state.settings = Object.assign(defaultState().settings, parsed.settings || {});
+        // deepseek-chat / deepseek-reasoner 已于 2026-07-24 弃用（继续使用会返回 400），自动迁移到 v4-flash
+        if (state.settings.model === 'deepseek-chat' || state.settings.model === 'deepseek-reasoner') {
+          state.settings.model = 'deepseek-v4-flash';
+        }
         return state;
       }
     } catch (e) { console.warn('读取本地数据失败，已重置', e); }

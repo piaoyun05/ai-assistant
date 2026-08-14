@@ -6,6 +6,7 @@ const vm = require('vm');
 // ---- 桩 ----
 const listeners = {};
 const sandbox = { console, setTimeout, clearTimeout, Date, Math, JSON, Object, Array, String, Number, Boolean, RegExp, Error, Promise, TextDecoder, Blob, process, fetch: async () => { throw new Error('fetch 不应在测试中调用'); } };
+sandbox.AbortController = class { constructor() { this.signal = {}; } abort() {} };
 sandbox.window = sandbox;
 sandbox.window.addEventListener = (ev, fn) => { listeners[ev] = fn; };
 sandbox.window.scrollTo = () => {};
@@ -52,8 +53,16 @@ for (const f of ['js/store.js', 'js/ai.js', 'js/ocr.js',
 const testCode = `
 let pass = 0, fail = 0;
 function check(name, fn) {
-  try { fn(); console.log('PASS ' + name); pass++; }
-  catch (e) { console.error('FAIL ' + name + ' -> ' + e.message); fail++; }
+  try {
+    const r = fn();
+    if (r && typeof r.then === 'function') {
+      return r.then(
+        () => { console.log('PASS ' + name); pass++; },
+        e => { console.error('FAIL ' + name + ' -> ' + e.message); fail++; }
+      );
+    }
+    console.log('PASS ' + name); pass++;
+  } catch (e) { console.error('FAIL ' + name + ' -> ' + e.message); fail++; }
 }
 
 check('Store 默认状态创建', () => {
@@ -143,8 +152,65 @@ check('md 列表包裹 ul', () => {
   if (!html.includes('<li>项目一</li>')) throw new Error('列表项未渲染');
 });
 
-console.log('\\n结果：' + pass + ' 通过，' + fail + ' 失败');
-if (fail) process.exit(1);
+(async () => {
+  await check('AI.chat V4 默认关闭 thinking（请求体校验）', async () => {
+    let captured = null;
+    const orig = fetch;
+    fetch = async (url, opts) => {
+      captured = { url: String(url), body: JSON.parse(opts.body) };
+      return { ok: true, status: 200, json: async () => ({ choices: [{ message: { content: 'ok' } }] }) };
+    };
+    try {
+      const s = Store.settings();
+      s.apiKey = 'sk-test';
+      s.model = 'deepseek-v4-flash';
+      const res = await AI.chat([{ role: 'user', content: 'hi' }], { stream: false });
+      if (res !== 'ok') throw new Error('返回值异常: ' + res);
+      if (!captured) throw new Error('未发起请求');
+      if (!captured.body.thinking || captured.body.thinking.type !== 'disabled') throw new Error('thinking 未默认关闭: ' + JSON.stringify(captured.body.thinking));
+      if (captured.body.stream !== false) throw new Error('stream 应为 false');
+    } finally { fetch = orig; }
+  });
+
+  await check('AI.chat 显式 thinking=enabled 时开启', async () => {
+    let captured = null;
+    const orig = fetch;
+    fetch = async (url, opts) => {
+      captured = JSON.parse(opts.body);
+      return { ok: true, status: 200, json: async () => ({ choices: [{ message: { content: 'ok' } }] }) };
+    };
+    try {
+      await AI.chat([{ role: 'user', content: 'hi' }], { stream: false, thinking: 'enabled' });
+      if (!captured || !captured.thinking || captured.thinking.type !== 'enabled') throw new Error('thinking 未按参数开启');
+    } finally { fetch = orig; }
+  });
+
+  console.log('\\n结果：' + pass + ' 通过，' + fail + ' 失败');
+  process.exit(fail ? 1 : 0);
+})();
 `;
 vm.runInContext(testCode, sandbox, { filename: 'test-body.js' });
+
+// ---- 模型迁移测试（独立沙箱，模拟老用户配置 deepseek-chat） ----
+(function () {
+  const mem2 = {};
+  const sb2 = { console, Date, JSON, Object, Array, String, Number, Boolean, RegExp, Error, Promise, process, Math };
+  sb2.window = sb2;
+  sb2.localStorage = {
+    getItem: k => (k in mem2 ? mem2[k] : null),
+    setItem: (k, v) => { mem2[k] = String(v); },
+    removeItem: k => { delete mem2[k]; }
+  };
+  mem2['pocket-ai-data-v1'] = JSON.stringify({
+    settings: { apiKey: 'sk-x', baseUrl: 'https://api.deepseek.com', model: 'deepseek-chat', systemPrompt: '', sound: true },
+    notes: [], todos: [], events: [], chats: [], extraTags: []
+  });
+  vm.createContext(sb2);
+  try {
+    vm.runInContext(fs.readFileSync(path.join(root, 'js/store.js'), 'utf8'), sb2, { filename: 'store-migrate.js' });
+    const model = vm.runInContext('Store.load().settings.model', sb2);
+    if (model !== 'deepseek-v4-flash') { console.error('FAIL 模型迁移 deepseek-chat → v4-flash（实际 ' + model + '）'); process.exit(1); }
+    console.log('PASS 模型迁移 deepseek-chat → v4-flash');
+  } catch (e) { console.error('FAIL 模型迁移 -> ' + e.message); process.exit(1); }
+})();
 
